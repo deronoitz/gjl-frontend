@@ -1,10 +1,13 @@
 import ProtectedRoute from '@/components/ProtectedRoute';
-import DashboardPage from './page';
 
-export default function Dashboard() {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <ProtectedRoute>
-      <DashboardPage />
+      {children}
     </ProtectedRoute>
   );
 }

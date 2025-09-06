@@ -1,0 +1,52 @@
+-- Seed data for custom authentication system
+-- Run this after applying the custom auth schema
+
+-- Insert demo users with hashed passwords
+-- Password for all demo users: 'demo123'
+-- Hash generated with: npm run hash-password demo123
+
+INSERT INTO public.users (house_number, password_hash, role, full_name, phone, email, is_active) VALUES
+('A-01', '$2b$12$SyIbCOQjYD7uam9e0/M8nuiShBAjEiYiP6.fRU55K.ZMCDbE5dvla', 'admin', 'Administrator', '081234567890', 'admin@gjl.local', true),
+('A-02', '$2b$12$SyIbCOQjYD7uam9e0/M8nuiShBAjEiYiP6.fRU55K.ZMCDbE5dvla', 'user', 'John Doe', '081234567891', 'john@gjl.local', true),
+('B-01', '$2b$12$SyIbCOQjYD7uam9e0/M8nuiShBAjEiYiP6.fRU55K.ZMCDbE5dvla', 'user', 'Jane Smith', '081234567892', 'jane@gjl.local', true),
+('B-02', '$2b$12$SyIbCOQjYD7uam9e0/M8nuiShBAjEiYiP6.fRU55K.ZMCDbE5dvla', 'user', 'Bob Wilson', '081234567893', 'bob@gjl.local', true),
+('C-01', '$2b$12$SyIbCOQjYD7uam9e0/M8nuiShBAjEiYiP6.fRU55K.ZMCDbE5dvla', 'user', 'Alice Brown', '081234567894', 'alice@gjl.local', true);
+
+-- Get user IDs for foreign key references
+-- Note: In production, you would use actual UUIDs from the inserted users
+
+-- Insert sample announcements
+INSERT INTO public.announcements (title, content, author_id, is_published) VALUES
+('Selamat Datang di Sistem Manajemen Perumahan', 'Sistem ini membantu pengelolaan keuangan dan komunikasi di perumahan kita. Silakan login dengan house number dan password yang telah diberikan.', 
+ (SELECT id FROM public.users WHERE house_number = 'A-01'), true),
+('Pengumuman Pembayaran Iuran Bulanan', 'Harap segera melakukan pembayaran iuran bulanan sebelum tanggal 15 setiap bulannya. Pembayaran dapat dilakukan melalui sistem ini.',
+ (SELECT id FROM public.users WHERE house_number = 'A-01'), true),
+('Kegiatan Gotong Royong', 'Akan ada kegiatan gotong royong pada hari Minggu, 15 September 2025. Mari berpartisipasi aktif untuk menjaga kebersihan lingkungan.',
+ (SELECT id FROM public.users WHERE house_number = 'A-01'), true),
+('Perbaikan Jalan Komplek', 'Perbaikan jalan di area blok A akan dimulai minggu depan. Mohon pengertian jika ada gangguan selama proses perbaikan.',
+ (SELECT id FROM public.users WHERE house_number = 'A-01'), false);
+
+-- Insert sample albums
+INSERT INTO public.albums (title, description, author_id) VALUES
+('Kegiatan RT 2025', 'Dokumentasi kegiatan RT sepanjang tahun 2025', 
+ (SELECT id FROM public.users WHERE house_number = 'A-01')),
+('Fasilitas Umum', 'Foto-foto fasilitas umum di perumahan seperti taman, masjid, dan area bermain', 
+ (SELECT id FROM public.users WHERE house_number = 'A-01')),
+('Acara Spesial', 'Dokumentasi acara-acara spesial di perumahan seperti perayaan hari raya dan ulang tahun RT', 
+ (SELECT id FROM public.users WHERE house_number = 'A-01'));
+
+-- Insert sample payments
+INSERT INTO public.payments (house_block, payment_date, amount, description, status, user_id, type, category) VALUES
+('A-02', '2025-09-01', 100000, 'Iuran bulanan September 2025', 'paid', 
+ (SELECT id FROM public.users WHERE house_number = 'A-02'), 'income', 'iuran_bulanan'),
+('B-01', '2025-09-01', 100000, 'Iuran bulanan September 2025', 'pending', 
+ (SELECT id FROM public.users WHERE house_number = 'B-01'), 'income', 'iuran_bulanan'),
+('B-02', '2025-09-01', 100000, 'Iuran bulanan September 2025', 'paid', 
+ (SELECT id FROM public.users WHERE house_number = 'B-02'), 'income', 'iuran_bulanan'),
+('C-01', '2025-08-15', 50000, 'Iuran kebersihan Agustus 2025', 'paid', 
+ (SELECT id FROM public.users WHERE house_number = 'C-01'), 'income', 'kebersihan'),
+('A-01', '2025-08-20', 500000, 'Pembelian lampu jalan', 'paid', 
+ (SELECT id FROM public.users WHERE house_number = 'A-01'), 'expense', 'infrastruktur');
+
+-- Note: Sample gallery images will need actual image URLs
+-- You can add them later through the admin interface

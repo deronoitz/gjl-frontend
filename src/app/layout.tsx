@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from '@/contexts/AuthContext';
+import { CustomAuthProvider } from '@/contexts/CustomAuthContext';
 import Navigation from '@/components/Navigation';
 
 const geistSans = Geist({
@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Perumahan App",
+  title: "Griya Jannatin Leyangan",
   description: "Aplikasi manajemen perumahan",
 };
 
@@ -29,12 +29,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>
+        <CustomAuthProvider>
           <Navigation />
           <main className="container mx-auto px-4 py-6">
             {children}
           </main>
-        </AuthProvider>
+        </CustomAuthProvider>
       </body>
     </html>
   );

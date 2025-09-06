@@ -1,14 +1,16 @@
 'use client';
 
-import { useAuth } from '@/contexts/AuthContext';
+import { useState } from 'react';
+import { useAuth } from '@/contexts/CustomAuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Home, LogOut, DollarSign, CreditCard, Camera, Users, Megaphone, Settings } from 'lucide-react';
+import { Home, LogOut, DollarSign, CreditCard, Camera, Users, Megaphone, Settings, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
+import ChangePasswordDialog from '@/components/ChangePasswordDialog';
 
 const navigationItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -22,7 +24,7 @@ const adminNavItems = [
   { name: 'Keuangan', href: '/finance', icon: DollarSign },
   { name: 'Pembayaran', href: '/payment', icon: CreditCard },
   { name: 'Galeri', href: '/gallery', icon: Camera },
-  { name: 'Users', href: '/admin/users', icon: Users },
+  { name: 'Warga', href: '/admin/users', icon: Users },
   { name: 'Pengumuman', href: '/admin/announcements', icon: Megaphone },
   { name: 'Settings', href: '/admin/settings', icon: Settings }
 ];
@@ -30,6 +32,17 @@ const adminNavItems = [
 export default function Navigation() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // Redirect to login page
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   if (!user) return null;
 
@@ -83,7 +96,12 @@ export default function Navigation() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end">
-                <DropdownMenuItem onClick={logout}>
+                <DropdownMenuItem onClick={() => setIsChangePasswordOpen(true)}>
+                  <Lock className="mr-2 h-4 w-4" />
+                  <span>Ganti Password</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Keluar</span>
                 </DropdownMenuItem>
@@ -92,6 +110,11 @@ export default function Navigation() {
           </div>
         </div>
       </div>
+      
+      <ChangePasswordDialog 
+        open={isChangePasswordOpen}
+        onOpenChange={setIsChangePasswordOpen}
+      />
     </nav>
   );
 }

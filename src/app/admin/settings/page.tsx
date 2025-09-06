@@ -1,81 +1,102 @@
 'use client';
 
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/CustomAuthContext';
+import { useSettings, AppSettings } from '@/hooks/use-settings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Settings, DollarSign, Save, RotateCcw } from 'lucide-react';
-
-interface AppSettings {
-  monthlyFee: number;
-  appName: string;
-  adminContact: string;
-}
-
-const defaultSettings: AppSettings = {
-  monthlyFee: 150000,
-  appName: 'Perumahan App',
-  adminContact: '081234567890'
-};
+import { Settings, DollarSign, Save, RotateCcw, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function AdminSettingsPage() {
   const { user } = useAuth();
-  const [settings, setSettings] = useState<AppSettings>(() => {
-    // Try to load from localStorage, fallback to default
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('appSettings');
-      return saved ? JSON.parse(saved) : defaultSettings;
-    }
-    return defaultSettings;
-  });
+  const { settings, isLoading, error, updateSettings } = useSettings();
+  const [localSettings, setLocalSettings] = useState<AppSettings['monthly_fee']>({ amount: 150000, currency: 'IDR' });
+  const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
 
-  if (!user || user.role !== 'admin') return null;
+  // Update local settings when remote settings change
+  useEffect(() => {
+    if (settings && !hasChanges) {
+      setLocalSettings(settings.monthly_fee);
+    }
+  }, [settings, hasChanges]);
 
-  const handleInputChange = (field: keyof AppSettings, value: string | number) => {
-    setSettings(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    setHasChanges(true);
-  };
+  if (!user || user.role !== 'admin') return null;
 
   const formatCurrency = (value: string) => {
     const number = value.replace(/\D/g, '');
     return new Intl.NumberFormat('id-ID').format(parseInt(number) || 0);
   };
 
-  const handleCurrencyChange = (field: keyof AppSettings, value: string) => {
+  const handleCurrencyChange = (value: string) => {
     const numericValue = parseInt(value.replace(/\D/g, '')) || 0;
-    handleInputChange(field, numericValue);
+    setLocalSettings({ 
+      amount: numericValue, 
+      currency: 'IDR' 
+    });
+    setHasChanges(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setIsSaving(true);
+    setMessage('');
+
     try {
-      localStorage.setItem('appSettings', JSON.stringify(settings));
-      setMessage('Pengaturan berhasil disimpan!');
-      setHasChanges(false);
-      
-      // Clear message after 3 seconds
-      setTimeout(() => setMessage(''), 3000);
+      const result = await updateSettings({
+        monthly_fee: localSettings
+      });
+
+      if (result.success) {
+        setMessage('Pengaturan berhasil disimpan!');
+        setHasChanges(false);
+      } else {
+        setMessage(`Gagal menyimpan: ${result.message}`);
+      }
     } catch {
-      setMessage('Gagal menyimpan pengaturan. Silakan coba lagi.');
-      setTimeout(() => setMessage(''), 3000);
+      setMessage('Terjadi kesalahan saat menyimpan pengaturan');
+    } finally {
+      setIsSaving(false);
+      // Clear message after 5 seconds
+      setTimeout(() => setMessage(''), 5000);
     }
   };
 
   const handleReset = () => {
-    if (confirm('Apakah Anda yakin ingin mengembalikan ke pengaturan default?')) {
-      setSettings(defaultSettings);
+    if (confirm('Apakah Anda yakin ingin mengembalikan ke pengaturan awal?')) {
+      setLocalSettings({ amount: 150000, currency: 'IDR' });
       setHasChanges(true);
-      setMessage('Pengaturan dikembalikan ke default. Jangan lupa simpan!');
-      setTimeout(() => setMessage(''), 3000);
+      setMessage('Pengaturan dikembalikan ke nilai awal. Jangan lupa simpan!');
+      setTimeout(() => setMessage(''), 5000);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Pengaturan Aplikasi</h1>
+            <p className="text-muted-foreground">Memuat pengaturan...</p>
+          </div>
+        </div>
+        <Card>
+          <CardHeader>
+            <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -88,19 +109,32 @@ export default function AdminSettingsPage() {
         </div>
         
         <div className="flex space-x-2">
-          <Button variant="outline" onClick={handleReset}>
+          <Button variant="outline" onClick={handleReset} disabled={isSaving}>
             <RotateCcw className="h-4 w-4 mr-2" />
             Reset Default
           </Button>
-          <Button onClick={handleSave} disabled={!hasChanges}>
-            <Save className="h-4 w-4 mr-2" />
-            Simpan Perubahan
+          <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
           </Button>
         </div>
       </div>
 
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Gagal memuat pengaturan: {error}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {message && (
-        <Alert>
+        <Alert variant={message.includes('berhasil') ? 'default' : 'destructive'}>
           <Settings className="h-4 w-4" />
           <AlertDescription>{message}</AlertDescription>
         </Alert>
@@ -128,85 +162,23 @@ export default function AdminSettingsPage() {
               <Label htmlFor="monthlyFee">Iuran Bulanan (Rp)</Label>
               <Input
                 id="monthlyFee"
-                value={formatCurrency(settings.monthlyFee.toString())}
-                onChange={(e) => handleCurrencyChange('monthlyFee', e.target.value)}
+                value={formatCurrency(localSettings.amount.toString())}
+                onChange={(e) => handleCurrencyChange(e.target.value)}
                 placeholder="150000"
+                disabled={isSaving}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Biaya iuran wajib per bulan
+                Biaya iuran wajib per bulan untuk semua warga
               </p>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Application Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Pengaturan Aplikasi</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="appName">Nama Aplikasi</Label>
-            <Input
-              id="appName"
-              value={settings.appName}
-              onChange={(e) => handleInputChange('appName', e.target.value)}
-              placeholder="Perumahan App"
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="adminContact">Kontak Admin</Label>
-            <Input
-              id="adminContact"
-              value={settings.adminContact}
-              onChange={(e) => handleInputChange('adminContact', e.target.value)}
-              placeholder="081234567890"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Nomor WhatsApp atau telepon admin yang bisa dihubungi
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Payment Settings */}
-      {/* Current Settings Preview */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Preview Pengaturan Saat Ini</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <h4 className="font-semibold mb-2">Biaya yang Berlaku:</h4>
-              <ul className="text-sm space-y-1">
-                <li>Iuran Bulanan: Rp {settings.monthlyFee.toLocaleString('id-ID')}</li>
-              </ul>
+            <div className="flex flex-col justify-end">
+              <div className="text-sm text-muted-foreground">
+                <strong>Nilai saat ini:</strong> Rp {formatCurrency(settings.monthly_fee.amount.toString())}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Terakhir diperbarui dari database
+              </div>
             </div>
-            
-            <div>
-              <h4 className="font-semibold mb-2">Kontak Admin:</h4>
-              <ul className="text-sm space-y-1">
-                <li>Admin: {settings.adminContact}</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Instructions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Petunjuk Penggunaan</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>• <strong>Iuran Bulanan:</strong> Nominal ini akan muncul sebagai pilihan default saat warga membuat pembayaran</p>
-            <p>• <strong>Kontak Admin:</strong> Ditampilkan di halaman pembayaran untuk pertanyaan warga</p>
-            <p>• <strong>Payment Gateway:</strong> Pembayaran akan diproses melalui payment gateway yang terintegrasi</p>
-            <p>• Semua perubahan akan langsung berlaku setelah disimpan</p>
           </div>
         </CardContent>
       </Card>

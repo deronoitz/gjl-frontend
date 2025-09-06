@@ -1,0 +1,109 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { CustomAuth } from '@/lib/custom-auth';
+import { supabase } from '@/lib/supabase';
+import bcrypt from 'bcryptjs';
+
+// GET /api/users - Get all users (admin only)
+export async function GET(request: NextRequest) {
+  try {
+    const sessionToken = request.cookies.get('session_token')?.value;
+
+    if (!sessionToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const session = await CustomAuth.verifySession(sessionToken);
+    if (!session || session.role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, house_number, role, name, created_at, updated_at')
+      .order('house_number', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching users:', error);
+      return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
+    }
+
+    return NextResponse.json(users);
+  } catch (error) {
+    console.error('Error in GET /api/users:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// POST /api/users - Create new user (admin only)
+export async function POST(request: NextRequest) {
+  try {
+    const sessionToken = request.cookies.get('session_token')?.value;
+
+    if (!sessionToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const session = await CustomAuth.verifySession(sessionToken);
+    if (!session || session.role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { houseNumber, password, role = 'user', name } = body;
+
+    if (!houseNumber || !password || !name) {
+      return NextResponse.json(
+        { error: 'House number, password, and name are required' },
+        { status: 400 }
+      );
+    }
+
+    // Check if house number already exists
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('house_number')
+      .eq('house_number', houseNumber)
+      .single();
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'House number already exists' },
+        { status: 400 }
+      );
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create user in our custom users table
+    const { data: newUser, error: userError } = await supabase
+      .from('users')
+      .insert({
+        house_number: houseNumber,
+        name: name,
+        password_hash: hashedPassword,
+        role: role,
+      })
+      .select()
+      .single();
+
+    if (userError || !newUser) {
+      console.error('Error creating user:', userError);
+      return NextResponse.json(
+        { error: 'Failed to create user' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      id: newUser.id,
+      house_number: newUser.house_number,
+      name: newUser.name,
+      role: newUser.role,
+      created_at: newUser.created_at,
+    }, { status: 201 });
+  } catch (error) {
+    console.error('Error in POST /api/users:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/CustomAuthContext';
+import { useSettings } from '@/hooks/use-settings';
+import { usePaymentStatus } from '@/hooks/use-payment-status';
 import { mockPayments } from '@/lib/mock-data';
 import { Payment } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -15,6 +17,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { 
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { 
   CreditCard, 
   CheckCircle, 
   Clock, 
@@ -23,7 +31,8 @@ import {
   Smartphone, 
   Wallet,
   Upload,
-  FileText
+  FileText,
+  ChevronDown
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -41,6 +50,8 @@ const MONTHS = [
 
 export default function PaymentPage() {
   const { user } = useAuth();
+  const { settings } = useSettings();
+  const { paymentData, loading: paymentLoading, fetchPaymentStatus } = usePaymentStatus();
   const [payments, setPayments] = useState<Payment[]>(mockPayments);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [isNewPaymentDialogOpen, setIsNewPaymentDialogOpen] = useState(false);
@@ -59,15 +70,28 @@ export default function PaymentPage() {
 
   // Form states for new payment request
   const [newPaymentForm, setNewPaymentForm] = useState({
-    month: '',
-    year: new Date().getFullYear().toString(),
-    amount: '150000',
-    description: '',
-    customAmount: ''
+    months: [] as string[],
+    year: new Date().getFullYear().toString()
   });
 
   // Year filter for payment status
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  // Fetch payment records when component mounts or year changes
+  useEffect(() => {
+    if (user?.id) {
+      console.log('Fetching payment status for user:', user.id, 'year:', selectedYear);
+      fetchPaymentStatus({
+        userId: user.id,
+        tahun: selectedYear
+      }).catch(error => {
+        console.error('Failed to fetch payment status:', error);
+        // Don't continue fetching if there's an auth error
+      });
+    } else {
+      console.log('No user found, skipping payment status fetch');
+    }
+  }, [user?.id, selectedYear]);
 
   if (!user) return null;
 
@@ -116,35 +140,33 @@ export default function PaymentPage() {
 
   const createNewPayment = () => {
     // Validation
-    if (!newPaymentForm.month || !newPaymentForm.description) {
-      setMessage('Bulan dan keterangan harus diisi');
+    if (!newPaymentForm.months || newPaymentForm.months.length === 0) {
+      setMessage('Pilih minimal satu bulan');
       return;
     }
 
-    const amount = newPaymentForm.amount === 'custom' 
-      ? parseInt(newPaymentForm.customAmount.replace(/\D/g, ''))
-      : parseInt(newPaymentForm.amount);
+    // Create payments for each selected month
+    const monthlyFeeAmount = settings?.monthly_fee?.amount || 150000; // Get from database or fallback
+    const newPayments: Payment[] = newPaymentForm.months.map(monthIndex => {
+      const amount = monthlyFeeAmount;
+      const monthName = MONTHS[parseInt(monthIndex) - 1];
+      const description = `Iuran Bulanan ${monthName} ${newPaymentForm.year}`;
 
-    if (!amount || amount < 1000) {
-      setMessage('Nominal pembayaran tidak valid');
-      return;
-    }
+      return {
+        id: (Date.now() + Math.random()).toString(),
+        houseBlock: user.houseNumber,
+        paymentDate: new Date(),
+        amount: amount,
+        description: description,
+        status: 'pending',
+        userId: user.id,
+        type: 'income',
+        category: 'maintenance'
+      };
+    });
 
-    // Create new payment
-    const newPayment: Payment = {
-      id: Date.now().toString(),
-      houseBlock: user.houseNumber,
-      paymentDate: new Date(),
-      amount: amount,
-      description: newPaymentForm.description,
-      status: 'pending',
-      userId: user.id,
-      type: 'income',
-      category: 'maintenance'
-    };
-
-    setPayments([newPayment, ...payments]);
-    setMessage('Tagihan pembayaran baru berhasil dibuat!');
+    setPayments([...newPayments, ...payments]);
+    setMessage(`${newPayments.length} tagihan pembayaran berhasil dibuat!`);
     setIsNewPaymentDialogOpen(false);
     resetNewPaymentForm();
 
@@ -164,11 +186,8 @@ export default function PaymentPage() {
 
   const resetNewPaymentForm = () => {
     setNewPaymentForm({
-      month: '',
-      year: new Date().getFullYear().toString(),
-      amount: '150000',
-      description: '',
-      customAmount: ''
+      months: [],
+      year: new Date().getFullYear().toString()
     });
   };
 
@@ -183,18 +202,15 @@ export default function PaymentPage() {
     }
   };
 
-  const formatCurrency = (value: string) => {
-    const number = value.replace(/\D/g, '');
-    return new Intl.NumberFormat('id-ID').format(parseInt(number) || 0);
-  };
-
-  // Generate monthly payment status for current year
+  // Generate monthly payment status for current year using both mock data and real backend data
   const generateMonthlyPaymentStatus = () => {
     const paidPayments = userPayments.filter(p => p.status === 'paid');
     
     return MONTHS.map((month, index) => {
       const monthNumber = index + 1;
-      const monthPayments = paidPayments.filter(payment => {
+      
+      // Check mock payments (local data)
+      const mockMonthPayments = paidPayments.filter(payment => {
         const paymentDate = new Date(payment.paymentDate);
         const paymentMonth = paymentDate.getMonth() + 1;
         const paymentYear = paymentDate.getFullYear();
@@ -206,12 +222,25 @@ export default function PaymentPage() {
         return descriptionContainsMonth || dateMatches;
       });
       
+      // Check backend payment records
+      const backendMonthPayments = paymentData.filter(record => {
+        return record.bulan === monthNumber && record.tahun === selectedYear;
+      });
+      
+      // A month is considered paid if there's either mock data or backend data
+      const isPaid = mockMonthPayments.length > 0 || backendMonthPayments.length > 0;
+      
+      // Calculate total amount from both sources
+      const mockAmount = mockMonthPayments.reduce((sum, p) => sum + p.amount, 0);
+      const backendAmount = backendMonthPayments.length > 0 ? (settings?.monthly_fee?.amount || 150000) : 0;
+      
       return {
         month,
         monthNumber,
-        isPaid: monthPayments.length > 0,
-        payments: monthPayments,
-        amount: monthPayments.reduce((sum, p) => sum + p.amount, 0)
+        isPaid,
+        payments: mockMonthPayments,
+        backendRecords: backendMonthPayments,
+        amount: mockAmount + backendAmount
       };
     });
   };
@@ -230,94 +259,112 @@ export default function PaymentPage() {
         
         <Dialog open={isNewPaymentDialogOpen} onOpenChange={setIsNewPaymentDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline">
+            <Button size={'lg'}>
               <Plus className="h-4 w-4 mr-2" />
-              Buat Tagihan Baru
+              Bayar Iuran
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Buat Tagihan Pembayaran Baru</DialogTitle>
+              <DialogTitle>Bayar Iuran Kas</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="month">Bulan</Label>
-                  <Select value={newPaymentForm.month} onValueChange={(value) => 
-                    setNewPaymentForm({ ...newPaymentForm, month: value })
-                  }>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih bulan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MONTHS.map((month, index) => (
-                        <SelectItem key={index} value={(index + 1).toString()}>
-                          {month}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="months">Bulan</Label>
+                  <DropdownMenu modal={false}>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between">
+                        {newPaymentForm.months.length === 0
+                          ? "Pilih bulan"
+                          : newPaymentForm.months.length === 1
+                          ? MONTHS[parseInt(newPaymentForm.months[0]) - 1]
+                          : `${newPaymentForm.months.length} bulan dipilih`
+                        }
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" onCloseAutoFocus={(e) => e.preventDefault()}>
+                      {MONTHS.map((month, index) => {
+                        const monthValue = (index + 1).toString();
+                        const isChecked = newPaymentForm.months.includes(monthValue);
+                        return (
+                          <DropdownMenuCheckboxItem
+                            key={index}
+                            checked={isChecked}
+                            onSelect={(e) => e.preventDefault()}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setNewPaymentForm({
+                                  ...newPaymentForm,
+                                  months: [...newPaymentForm.months, monthValue].sort((a, b) => parseInt(a) - parseInt(b))
+                                });
+                              } else {
+                                setNewPaymentForm({
+                                  ...newPaymentForm,
+                                  months: newPaymentForm.months.filter(m => m !== monthValue)
+                                });
+                              }
+                            }}
+                          >
+                            {month}
+                          </DropdownMenuCheckboxItem>
+                        );
+                      })}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 <div>
                   <Label htmlFor="year">Tahun</Label>
-                  <Input
-                    id="year"
-                    value={newPaymentForm.year}
-                    onChange={(e) => setNewPaymentForm({ ...newPaymentForm, year: e.target.value })}
-                    placeholder="2024"
-                  />
+                  <Select value={newPaymentForm.year} onValueChange={(value) => 
+                    setNewPaymentForm({ ...newPaymentForm, year: value })
+                  }>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih tahun" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2023">2023</SelectItem>
+                      <SelectItem value="2024">2024</SelectItem>
+                      <SelectItem value="2025">2025</SelectItem>
+                      <SelectItem value="2026">2026</SelectItem>
+                      <SelectItem value="2027">2027</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="amount">Nominal Pembayaran</Label>
-                <Select value={newPaymentForm.amount} onValueChange={(value) => 
-                  setNewPaymentForm({ ...newPaymentForm, amount: value })
-                }>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih nominal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="150000">Rp 150.000 (Iuran Bulanan)</SelectItem>
-                    <SelectItem value="300000">Rp 300.000 (Iuran 2 Bulan)</SelectItem>
-                    <SelectItem value="500000">Rp 500.000 (Iuran Keamanan)</SelectItem>
-                    <SelectItem value="1000000">Rp 1.000.000 (Iuran Khusus)</SelectItem>
-                    <SelectItem value="custom">Nominal Lainnya</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {newPaymentForm.amount === 'custom' && (
-                <div>
-                  <Label htmlFor="customAmount">Nominal Custom</Label>
-                  <Input
-                    id="customAmount"
-                    value={formatCurrency(newPaymentForm.customAmount)}
-                    onChange={(e) => setNewPaymentForm({ 
-                      ...newPaymentForm, 
-                      customAmount: e.target.value.replace(/\D/g, '') 
-                    })}
-                    placeholder="0"
-                  />
+              {/* Total Amount Display */}
+              {newPaymentForm.months.length > 0 && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">
+                        Total yang harus dibayar:
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        {newPaymentForm.months.length} bulan × Rp {(settings?.monthly_fee?.amount || 150000).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-bold text-blue-800">
+                        Rp {((settings?.monthly_fee?.amount || 150000) * newPaymentForm.months.length).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-blue-200">
+                    <p className="text-xs text-blue-600">
+                      Bulan yang dipilih: {newPaymentForm.months.map(m => MONTHS[parseInt(m) - 1]).join(', ')}
+                    </p>
+                  </div>
                 </div>
               )}
-
-              <div>
-                <Label htmlFor="description">Keterangan</Label>
-                <Input
-                  id="description"
-                  value={newPaymentForm.description}
-                  onChange={(e) => setNewPaymentForm({ ...newPaymentForm, description: e.target.value })}
-                  placeholder="Contoh: Iuran Bulanan September 2024"
-                />
-              </div>
 
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setIsNewPaymentDialogOpen(false)}>
                   Batal
                 </Button>
                 <Button onClick={createNewPayment}>
-                  Buat Tagihan
+                  Bayar
                 </Button>
               </div>
             </div>
@@ -357,48 +404,57 @@ export default function PaymentPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-            {monthlyStatus.map((status) => (
-              <div
-                key={status.monthNumber}
-                className={`p-4 rounded-lg border-2 transition-colors ${
-                  status.isPaid
-                    ? 'border-green-200 bg-green-50'
-                    : 'border-gray-200 bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-0">
-                  <h4 className="font-semibold text-sm">{status.month}</h4>
-                  {status.isPaid ? (
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                  ) : (
-                    <Clock className="h-5 w-5 text-gray-400" />
-                  )}
-                </div>
-                <div className={`text-xs ${status.isPaid ? 'text-green-700' : 'text-gray-500'}`}>
-                  {status.isPaid ? (
-                    <>
-                      <p className="font-medium">✓ Sudah Dibayar</p>
-                    </>
-                  ) : (
-                    <p>Belum Dibayar</p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <div className="flex items-center text-sm text-blue-700">
-              <CheckCircle className="h-4 w-4 mr-2" />
-              <span className="font-medium">
-                {monthlyStatus.filter(s => s.isPaid).length} dari {MONTHS.length} bulan telah dibayar
-              </span>
+          {paymentLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-2 text-sm text-muted-foreground">Memuat data pembayaran...</span>
             </div>
-            <p className="text-xs text-blue-600 mt-1">
-              Total dibayar: Rp {monthlyStatus.reduce((sum, s) => sum + s.amount, 0).toLocaleString('id-ID')}
-            </p>
-          </div>
+          ) : (
+            <>
+              <div className="grid gap-4 grid-cols-4 md:grid-cols-6">
+                {monthlyStatus.map((status) => (
+                  <div
+                    key={status.monthNumber}
+                    className={`p-4 rounded-lg border-2 transition-colors ${
+                      status.isPaid
+                        ? 'border-green-200 bg-green-50'
+                        : 'border-gray-200 bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-0">
+                      <h4 className="font-semibold text-sm">{status.month}</h4>
+                      {status.isPaid ? (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <Clock className="h-5 w-5 text-gray-400" />
+                      )}
+                    </div>
+                    <div className={`text-xs ${status.isPaid ? 'text-green-700' : 'text-gray-500'}`}>
+                      {status.isPaid ? (
+                        <>
+                          <p className="font-medium">✓ Sudah Dibayar</p>
+                        </>
+                      ) : (
+                        <p>Belum Dibayar</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <div className="flex items-center text-sm text-blue-700">
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  <span className="font-medium">
+                    {monthlyStatus.filter(s => s.isPaid).length} dari {MONTHS.length} bulan telah dibayar
+                  </span>
+                </div>
+                <p className="text-xs text-blue-600 mt-1">
+                  Total dibayar: Rp {monthlyStatus.reduce((sum, s) => sum + s.amount, 0).toLocaleString('id-ID')}
+                </p>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

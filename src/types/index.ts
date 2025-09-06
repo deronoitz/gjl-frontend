@@ -1,9 +1,20 @@
 export interface User {
   id: string;
   houseNumber: string;
-  password: string;
+  name: string;
+  password_hash: string;
   role: 'admin' | 'user';
   createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AuthUser {
+  id: string;
+  houseNumber: string;
+  name: string;
+  role: 'admin' | 'user';
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Payment {
@@ -42,13 +53,13 @@ export interface Album {
   driveUrl: string;
   createdAt: Date;
   authorId: string;
+  authorName?: string;
 }
 
 export interface AuthContextType {
-  user: User | null;
-  login: (houseNumber: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  user: AuthUser | null;
   isLoading: boolean;
+  isAuthenticated: boolean;
 }
 
 export interface FinancialRecord {

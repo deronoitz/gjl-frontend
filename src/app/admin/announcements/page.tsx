@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { mockAnnouncements } from '@/lib/mock-data';
-import { Announcement } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAnnouncements } from '@/hooks/use-announcements';
+import { useAuth } from '@/contexts/CustomAuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,18 +17,27 @@ import { id } from 'date-fns/locale';
 
 export default function AdminAnnouncementsPage() {
   const { user } = useAuth();
-  const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements);
+  const {
+    announcements,
+    isLoading,
+    error,
+    createAnnouncement,
+    updateAnnouncement,
+    deleteAnnouncement
+  } = useAnnouncements();
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     content: ''
   });
   const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!user || user.role !== 'admin') return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.title.trim() || !formData.content.trim()) {
@@ -37,37 +45,46 @@ export default function AdminAnnouncementsPage() {
       return;
     }
 
-    if (editingAnnouncement) {
-      // Update existing announcement
-      setAnnouncements(announcements.map(a => 
-        a.id === editingAnnouncement.id 
-          ? { ...a, ...formData }
-          : a
-      ));
-      setMessage('Pengumuman berhasil diupdate');
-    } else {
-      // Add new announcement
-      const newAnnouncement: Announcement = {
-        id: Date.now().toString(),
-        ...formData,
-        createdAt: new Date(),
-        authorId: user.id
-      };
-      setAnnouncements([newAnnouncement, ...announcements]);
-      setMessage('Pengumuman berhasil ditambahkan');
-    }
+    setIsSubmitting(true);
+    setMessage('');
 
-    // Reset form
-    setFormData({ title: '', content: '' });
-    setEditingAnnouncement(null);
-    setIsDialogOpen(false);
-    
-    // Clear message after 3 seconds
-    setTimeout(() => setMessage(''), 3000);
+    try {
+      if (editingId) {
+        // Update existing announcement
+        const updated = await updateAnnouncement(editingId, {
+          title: formData.title.trim(),
+          content: formData.content.trim()
+        });
+        if (updated) {
+          setMessage('Pengumuman berhasil diupdate');
+        }
+      } else {
+        // Add new announcement
+        const created = await createAnnouncement({
+          title: formData.title.trim(),
+          content: formData.content.trim()
+        });
+        if (created) {
+          setMessage('Pengumuman berhasil ditambahkan');
+        }
+      }
+
+      // Reset form
+      setFormData({ title: '', content: '' });
+      setEditingId(null);
+      setIsDialogOpen(false);
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(''), 3000);
+    } catch {
+      setMessage('Terjadi kesalahan saat menyimpan pengumuman');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleEdit = (announcement: Announcement) => {
-    setEditingAnnouncement(announcement);
+  const handleEdit = (announcement: { id: string; title: string; content: string }) => {
+    setEditingId(announcement.id);
     setFormData({
       title: announcement.title,
       content: announcement.content
@@ -75,17 +92,22 @@ export default function AdminAnnouncementsPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (announcementId: string) => {
+  const handleDelete = async (announcementId: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus pengumuman ini?')) {
-      setAnnouncements(announcements.filter(a => a.id !== announcementId));
-      setMessage('Pengumuman berhasil dihapus');
-      setTimeout(() => setMessage(''), 3000);
+      const success = await deleteAnnouncement(announcementId);
+      if (success) {
+        setMessage('Pengumuman berhasil dihapus');
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage('Gagal menghapus pengumuman');
+        setTimeout(() => setMessage(''), 3000);
+      }
     }
   };
 
   const resetDialog = () => {
     setFormData({ title: '', content: '' });
-    setEditingAnnouncement(null);
+    setEditingId(null);
     setMessage('');
   };
 
@@ -112,7 +134,7 @@ export default function AdminAnnouncementsPage() {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
-                {editingAnnouncement ? 'Edit Pengumuman' : 'Buat Pengumuman Baru'}
+                {editingId ? 'Edit Pengumuman' : 'Buat Pengumuman Baru'}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -144,8 +166,13 @@ export default function AdminAnnouncementsPage() {
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Batal
                 </Button>
-                <Button type="submit">
-                  {editingAnnouncement ? 'Update' : 'Publikasikan'}
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting 
+                    ? 'Menyimpan...' 
+                    : editingId 
+                      ? 'Update' 
+                      : 'Publikasikan'
+                  }
                 </Button>
               </div>
             </form>
@@ -162,7 +189,28 @@ export default function AdminAnnouncementsPage() {
 
       {/* Announcements List */}
       <div className="space-y-4">
-        {announcements.length === 0 ? (
+        {isLoading ? (
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <Megaphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold">Memuat pengumuman...</h3>
+              </div>
+            </CardContent>
+          </Card>
+        ) : error ? (
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <Alert>
+                  <AlertDescription>
+                    Gagal memuat pengumuman: {error}
+                  </AlertDescription>
+                </Alert>
+              </div>
+            </CardContent>
+          </Card>
+        ) : announcements.length === 0 ? (
           <Card>
             <CardContent className="flex items-center justify-center py-12">
               <div className="text-center">
@@ -187,10 +235,10 @@ export default function AdminAnnouncementsPage() {
                     <CardTitle className="text-xl">{announcement.title}</CardTitle>
                     <div className="flex items-center space-x-2">
                       <Badge variant="outline">
-                        {format(announcement.createdAt, 'dd MMM yyyy HH:mm', { locale: id })}
+                        {format(new Date(announcement.createdAt), 'dd MMM yyyy HH:mm', { locale: id })}
                       </Badge>
                       <span className="text-sm text-muted-foreground">
-                        oleh Admin
+                        oleh {announcement.authorName || 'Admin'}
                       </span>
                     </div>
                   </div>

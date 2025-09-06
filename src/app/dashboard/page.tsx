@@ -1,28 +1,22 @@
 'use client';
 
-import { useAuth } from '@/contexts/AuthContext';
-import { mockAnnouncements, mockPayments } from '@/lib/mock-data';
+import { useAuth } from '@/contexts/CustomAuthContext';
+import { useAnnouncements } from '@/hooks/use-announcements';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, DollarSign, Users, Megaphone } from 'lucide-react';
+import MonthlyFeeCard from '@/components/MonthlyFeeCard';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { announcements, isLoading: announcementsLoading, error: announcementsError } = useAnnouncements();
   
   if (!user) return null;
 
-  // Calculate some stats
-  const totalPayments = mockPayments.filter(p => p.status === 'paid').length;
-  const pendingPayments = mockPayments.filter(p => p.status === 'pending').length;
-  const totalAmount = mockPayments
-    .filter(p => p.status === 'paid')
-    .reduce((sum, p) => sum + p.amount, 0);
-
-  const userPayments = mockPayments.filter(p => p.userId === user.id);
-  const userPendingPayments = userPayments.filter(p => p.status === 'pending');
+  // Get the latest 3 announcements for dashboard
+  const latestAnnouncements = announcements.slice(0, 3);
 
   return (
     <div className="space-y-6">
@@ -33,17 +27,10 @@ export default function DashboardPage() {
         </p>
       </div>
 
-
-      {/* User's Pending Payments Alert */}
-      {userPendingPayments.length > 0 && (
-        <Alert>
-          <Megaphone className="h-4 w-4" />
-          <AlertDescription>
-            Anda memiliki {userPendingPayments.length} pembayaran yang belum diselesaikan.
-            Silakan kunjungi halaman pembayaran untuk melunasi.
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Info Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <MonthlyFeeCard />
+      </div>
 
       {/* Announcements */}
       <Card>
@@ -51,12 +38,22 @@ export default function DashboardPage() {
           <CardTitle>Pengumuman Terbaru</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {mockAnnouncements.length === 0 ? (
+          {announcementsLoading ? (
+            <p className="text-muted-foreground text-center py-4">
+              Memuat pengumuman...
+            </p>
+          ) : announcementsError ? (
+            <Alert>
+              <AlertDescription>
+                Gagal memuat pengumuman: {announcementsError}
+              </AlertDescription>
+            </Alert>
+          ) : latestAnnouncements.length === 0 ? (
             <p className="text-muted-foreground text-center py-4">
               Belum ada pengumuman
             </p>
           ) : (
-            mockAnnouncements.map((announcement) => (
+            latestAnnouncements.map((announcement) => (
               <div
                 key={announcement.id}
                 className="p-4 border rounded-lg space-y-2"
@@ -64,7 +61,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <h4 className="font-semibold">{announcement.title}</h4>
                   <Badge variant="outline">
-                    {format(announcement.createdAt, 'dd MMM yyyy', {
+                    {format(new Date(announcement.createdAt), 'dd MMM yyyy', {
                       locale: id,
                     })}
                   </Badge>
@@ -72,6 +69,11 @@ export default function DashboardPage() {
                 <p className="text-sm text-muted-foreground">
                   {announcement.content}
                 </p>
+                {announcement.authorName && (
+                  <p className="text-xs text-muted-foreground">
+                    oleh {announcement.authorName}
+                  </p>
+                )}
               </div>
             ))
           )}

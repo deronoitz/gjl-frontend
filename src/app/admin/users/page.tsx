@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { mockUsers } from '@/lib/mock-data';
-import { User } from '@/types';
+import { useUsers, User } from '@/hooks/use-users-admin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,87 +10,98 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const { users, loading, error, createUser, updateUser, deleteUser } = useUsers();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     houseNumber: '',
+    name: '',
     password: '',
     role: 'user' as 'admin' | 'user'
   });
   const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.houseNumber || !formData.password) {
-      setMessage('Nomor rumah dan password harus diisi');
+    if (!formData.houseNumber || !formData.name) {
+      setMessage('Nomor rumah dan nama harus diisi');
       return;
     }
 
-    // Check if house number already exists (except when editing)
-    const existingUser = users.find(u => 
-      u.houseNumber === formData.houseNumber && u.id !== editingUser?.id
-    );
-    
-    if (existingUser) {
-      setMessage('Nomor rumah sudah terdaftar');
+    if (!editingUser && !formData.password) {
+      setMessage('Password harus diisi untuk user baru');
       return;
     }
 
-    if (editingUser) {
-      // Update existing user
-      setUsers(users.map(u => 
-        u.id === editingUser.id 
-          ? { ...u, ...formData }
-          : u
-      ));
-      setMessage('User berhasil diupdate');
-    } else {
-      // Add new user
-      const newUser: User = {
-        id: Date.now().toString(),
-        ...formData,
-        createdAt: new Date()
-      };
-      setUsers([...users, newUser]);
-      setMessage('User berhasil ditambahkan');
-    }
-
-    // Reset form
-    setFormData({ houseNumber: '', password: '', role: 'user' });
-    setEditingUser(null);
-    setIsDialogOpen(false);
+    setIsSubmitting(true);
     
-    // Clear message after 3 seconds
-    setTimeout(() => setMessage(''), 3000);
+    try {
+      if (editingUser) {
+        // Update existing user
+        await updateUser(editingUser.id, {
+          houseNumber: formData.houseNumber,
+          name: formData.name,
+          password: formData.password || undefined,
+          role: formData.role
+        });
+        setMessage('User berhasil diupdate');
+      } else {
+        // Add new user
+        await createUser({
+          houseNumber: formData.houseNumber,
+          name: formData.name,
+          password: formData.password,
+          role: formData.role
+        });
+        setMessage('User berhasil ditambahkan');
+      }
+
+      // Reset form
+      setFormData({ houseNumber: '', name: '', password: '', role: 'user' });
+      setEditingUser(null);
+      setIsDialogOpen(false);
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Terjadi kesalahan');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEdit = (user: User) => {
     setEditingUser(user);
     setFormData({
-      houseNumber: user.houseNumber,
-      password: user.password,
+      houseNumber: user.house_number,
+      name: user.name,
+      password: '',
       role: user.role
     });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (userId: string) => {
+  const handleDelete = async (userId: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus user ini?')) {
-      setUsers(users.filter(u => u.id !== userId));
-      setMessage('User berhasil dihapus');
-      setTimeout(() => setMessage(''), 3000);
+      try {
+        await deleteUser(userId);
+        setMessage('User berhasil dihapus');
+        setTimeout(() => setMessage(''), 3000);
+      } catch (err) {
+        setMessage(err instanceof Error ? err.message : 'Gagal menghapus user');
+      }
     }
   };
 
   const resetDialog = () => {
-    setFormData({ houseNumber: '', password: '', role: 'user' });
+    setFormData({ houseNumber: '', name: '', password: '', role: 'user' });
     setEditingUser(null);
     setMessage('');
   };
@@ -100,9 +110,9 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Kelola User</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Kelola Warga</h1>
           <p className="text-muted-foreground">
-            Manage user accounts for the housing complex
+            Kelola warga dan admin yang memiliki akses ke sistem.
           </p>
         </div>
         
@@ -129,11 +139,22 @@ export default function AdminUsersPage() {
                   id="houseNumber"
                   value={formData.houseNumber}
                   onChange={(e) => setFormData({ ...formData, houseNumber: e.target.value })}
-                  placeholder="Contoh: A001"
+                  placeholder="Contoh: A-01"
                 />
               </div>
               <div>
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="name">Nama</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Nama lengkap"
+                />
+              </div>
+              <div>
+                <Label htmlFor="password">
+                  Password {editingUser && "(kosongkan jika tidak ingin mengubah)"}
+                </Label>
                 <Input
                   id="password"
                   type="password"
@@ -162,8 +183,8 @@ export default function AdminUsersPage() {
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Batal
                 </Button>
-                <Button type="submit">
-                  {editingUser ? 'Update' : 'Tambah'}
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Loading...' : (editingUser ? 'Update' : 'Tambah')}
                 </Button>
               </div>
             </form>
@@ -171,60 +192,69 @@ export default function AdminUsersPage() {
         </Dialog>
       </div>
 
-      {message && (
+      {(message || error) && (
         <Alert>
-          <AlertDescription>{message}</AlertDescription>
+          <AlertDescription>{message || error}</AlertDescription>
         </Alert>
       )}
 
       <Card>
         <CardHeader>
-          <CardTitle>Daftar User</CardTitle>
+          <CardTitle>Daftar Warga</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nomor Rumah</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Tanggal Daftar</TableHead>
-                <TableHead>Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.houseNumber}</TableCell>
-                  <TableCell>
-                    <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'}>
-                      {user.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {format(user.createdAt, 'dd MMM yyyy', { locale: id })}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(user)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(user.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          {loading ? (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              Loading users...
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nomor Rumah</TableHead>
+                  <TableHead>Nama</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Tanggal Daftar</TableHead>
+                  <TableHead>Aksi</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.house_number}</TableCell>
+                    <TableCell>{user.name}</TableCell>
+                    <TableCell>
+                      <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'} className="capitalize">
+                        {user.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {format(new Date(user.created_at), 'dd MMM yyyy', { locale: id })}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(user)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(user.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

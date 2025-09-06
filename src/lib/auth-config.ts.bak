@@ -1,0 +1,94 @@
+import { NextAuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { supabase } from './supabase';
+import bcrypt from 'bcryptjs';
+
+export const authOptions: NextAuthOptions = {
+  providers: [
+    CredentialsProvider({
+      name: 'credentials',
+      credentials: {
+        houseNumber: { label: 'House Number', type: 'text' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(credentials) {
+        if (!credentials?.houseNumber || !credentials?.password) {
+          return null;
+        }
+
+        try {
+          // Get user by house number from profiles table
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('house_number', credentials.houseNumber)
+            .single();
+
+          if (profileError || !profile) {
+            console.log('Profile not found:', profileError);
+            return null;
+          }
+
+          // Get the auth user
+          const { data: authUser, error: authError } = await supabase.auth.admin
+            .getUserById(profile.id);
+
+          if (authError || !authUser.user) {
+            console.log('Auth user not found:', authError);
+            return null;
+          }
+
+          // Check password from user metadata
+          const storedPassword = authUser.user.user_metadata?.password;
+          
+          if (!storedPassword) {
+            console.log('No stored password found');
+            return null;
+          }
+
+          const isPasswordValid = await bcrypt.compare(credentials.password, storedPassword);
+
+          if (!isPasswordValid) {
+            console.log('Invalid password');
+            return null;
+          }
+
+          // Return user object that matches NextAuth User interface
+          return {
+            id: profile.id,
+            email: profile.email,
+            name: profile.full_name,
+            houseNumber: profile.house_number,
+            role: profile.role,
+          };
+        } catch (error) {
+          console.error('Auth error:', error);
+          return null;
+        }
+      },
+    }),
+  ],
+  session: {
+    strategy: 'jwt',
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.houseNumber = (user as any).houseNumber;
+        token.role = (user as any).role;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token) {
+        (session.user as any).id = token.sub;
+        (session.user as any).houseNumber = token.houseNumber;
+        (session.user as any).role = token.role;
+      }
+      return session;
+    },
+  },
+  pages: {
+    signIn: '/login',
+  },
+};

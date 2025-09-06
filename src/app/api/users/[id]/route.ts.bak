@@ -1,0 +1,149 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth-config';
+import { supabase } from '@/lib/supabase';
+import bcrypt from 'bcryptjs';
+
+// GET /api/users/[id] - Get user by ID
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    const userId = params.id;
+
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Users can only view their own profile, admins can view any
+    const isAdmin = (session.user as any).role === 'admin';
+    const isOwnProfile = session.user.id === userId;
+
+    if (!isAdmin && !isOwnProfile) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('id, house_number, role, full_name, phone, email, created_at')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching user:', error);
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(profile);
+  } catch (error) {
+    console.error('Error in GET /api/users/[id]:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// PUT /api/users/[id] - Update user
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    const userId = params.id;
+
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Users can only update their own profile, admins can update any
+    const isAdmin = (session.user as any).role === 'admin';
+    const isOwnProfile = session.user.id === userId;
+
+    if (!isAdmin && !isOwnProfile) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { houseNumber, role, fullName, phone, email, password } = body;
+
+    // Prepare update data
+    const updateData: any = {};
+    if (houseNumber !== undefined) updateData.house_number = houseNumber;
+    if (fullName !== undefined) updateData.full_name = fullName;
+    if (phone !== undefined) updateData.phone = phone;
+    if (email !== undefined) updateData.email = email;
+
+    // Only admins can change role
+    if (role !== undefined && isAdmin) {
+      updateData.role = role;
+    }
+
+    // Update profile
+    const { data: updatedProfile, error: profileError } = await supabase
+      .from('profiles')
+      .update(updateData)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (profileError) {
+      console.error('Error updating profile:', profileError);
+      return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
+    }
+
+    // Update password if provided
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 12);
+      
+      const { error: authError } = await supabase.auth.admin.updateUserById(
+        userId,
+        {
+          password: password,
+          user_metadata: {
+            password: hashedPassword,
+          },
+        }
+      );
+
+      if (authError) {
+        console.error('Error updating password:', authError);
+        // Profile was updated but password wasn't, still return success
+        console.log('Profile updated but password update failed');
+      }
+    }
+
+    return NextResponse.json(updatedProfile);
+  } catch (error) {
+    console.error('Error in PUT /api/users/[id]:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// DELETE /api/users/[id] - Delete user (admin only)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    const userId = params.id;
+
+    if (!session?.user || (session.user as any).role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Delete auth user (this will cascade delete the profile via RLS)
+    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+
+    if (authError) {
+      console.error('Error deleting user:', authError);
+      return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
+    }
+
+    return NextResponse.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error in DELETE /api/users/[id]:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

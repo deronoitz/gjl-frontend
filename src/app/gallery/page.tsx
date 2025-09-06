@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { mockAlbums } from '@/lib/mock-data';
 import { Album } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/CustomAuthContext';
+import { useAlbums } from '@/hooks/use-albums';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,14 +11,22 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Calendar, Image as ImageIcon, Edit, Trash2, Upload, ExternalLink, FolderOpen } from 'lucide-react';
+import { Plus, Calendar, Image as ImageIcon, Edit, Trash2, Upload, ExternalLink, FolderOpen, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import Image from 'next/image';
 
 export default function GalleryPage() {
   const { user } = useAuth();
-  const [albums, setAlbums] = useState<Album[]>(mockAlbums);
+  const {
+    albums,
+    loading,
+    error: apiError,
+    createAlbum,
+    updateAlbum,
+    deleteAlbum
+  } = useAlbums();
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAlbum, setEditingAlbum] = useState<Album | null>(null);
   const [formData, setFormData] = useState({
@@ -26,23 +34,49 @@ export default function GalleryPage() {
     coverImageUrl: '',
     driveUrl: ''
   });
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string>('');
   const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isAdmin = user?.role === 'admin';
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check if file is an image
+      if (!file.type.startsWith('image/')) {
+        setMessage('File harus berupa gambar (JPG, PNG, GIF, dll)');
+        return;
+      }
+      
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setMessage('Ukuran file maksimal 5MB');
+        return;
+      }
+
+      setCoverImageFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setCoverImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title.trim() || !formData.coverImageUrl.trim() || !formData.driveUrl.trim()) {
-      setMessage('Judul, URL gambar cover, dan URL Google Drive harus diisi');
+    if (!formData.title.trim() || !formData.driveUrl.trim()) {
+      setMessage('Judul dan URL Google Drive harus diisi');
       return;
     }
 
-    // Simple URL validation for cover image
-    try {
-      new URL(formData.coverImageUrl);
-    } catch {
-      setMessage('URL gambar cover tidak valid');
+    if (!editingAlbum && (!coverImageFile || !coverImagePreview)) {
+      setMessage('Gambar cover harus dipilih');
       return;
     }
 
@@ -54,35 +88,58 @@ export default function GalleryPage() {
       return;
     }
 
-    if (editingAlbum) {
-      // Update existing album
-      setAlbums(albums.map(album => 
-        album.id === editingAlbum.id 
-          ? { ...album, title: formData.title, coverImageUrl: formData.coverImageUrl, driveUrl: formData.driveUrl }
-          : album
-      ));
-      setMessage('Album berhasil diupdate');
-    } else {
-      // Add new album
-      const newAlbum: Album = {
-        id: Date.now().toString(),
-        title: formData.title,
-        coverImageUrl: formData.coverImageUrl,
-        driveUrl: formData.driveUrl,
-        createdAt: new Date(),
-        authorId: user?.id || ''
-      };
-      setAlbums([newAlbum, ...albums]);
-      setMessage('Album berhasil ditambahkan');
-    }
+    setIsSubmitting(true);
+    setMessage('');
 
-    // Reset form
-    setFormData({ title: '', coverImageUrl: '', driveUrl: '' });
-    setEditingAlbum(null);
-    setIsDialogOpen(false);
-    
-    // Clear message after 3 seconds
-    setTimeout(() => setMessage(''), 3000);
+    try {
+      let success = false;
+
+      if (editingAlbum) {
+        // Update existing album
+        success = await updateAlbum(
+          editingAlbum.id,
+          formData.title,
+          formData.driveUrl,
+          coverImageFile
+        );
+        if (success) {
+          setMessage('Album berhasil diupdate');
+        }
+      } else {
+        // Create new album
+        if (!user?.id) {
+          setMessage('User tidak terautentikasi');
+          return;
+        }
+
+        success = await createAlbum(
+          formData.title,
+          formData.driveUrl,
+          coverImageFile,
+          user.id
+        );
+        if (success) {
+          setMessage('Album berhasil ditambahkan');
+        }
+      }
+
+      if (success) {
+        // Reset form
+        setFormData({ title: '', coverImageUrl: '', driveUrl: '' });
+        setCoverImageFile(null);
+        setCoverImagePreview('');
+        setEditingAlbum(null);
+        setIsDialogOpen(false);
+        
+        // Clear message after 3 seconds
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setMessage('Terjadi kesalahan, coba lagi');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEdit = (album: Album) => {
@@ -92,19 +149,25 @@ export default function GalleryPage() {
       coverImageUrl: album.coverImageUrl,
       driveUrl: album.driveUrl
     });
+    setCoverImagePreview(album.coverImageUrl); // Set current image as preview
+    setCoverImageFile(null); // Reset file since we're editing
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (albumId: string) => {
+  const handleDelete = async (albumId: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus album ini?')) {
-      setAlbums(albums.filter(album => album.id !== albumId));
-      setMessage('Album berhasil dihapus');
-      setTimeout(() => setMessage(''), 3000);
+      const success = await deleteAlbum(albumId);
+      if (success) {
+        setMessage('Album berhasil dihapus');
+        setTimeout(() => setMessage(''), 3000);
+      }
     }
   };
 
   const resetDialog = () => {
     setFormData({ title: '', coverImageUrl: '', driveUrl: '' });
+    setCoverImageFile(null);
+    setCoverImagePreview('');
     setEditingAlbum(null);
     setMessage('');
   };
@@ -148,16 +211,16 @@ export default function GalleryPage() {
                 </div>
                 
                 <div>
-                  <Label htmlFor="coverImageUrl">URL Gambar Cover</Label>
+                  <Label htmlFor="coverImage">Gambar Cover</Label>
                   <Input
-                    id="coverImageUrl"
-                    type="url"
-                    value={formData.coverImageUrl}
-                    onChange={(e) => setFormData({ ...formData, coverImageUrl: e.target.value })}
-                    placeholder="https://example.com/cover-image.jpg"
+                    id="coverImage"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="cursor-pointer"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    URL gambar untuk cover album (JPG, PNG, GIF)
+                    Upload gambar untuk cover album (JPG, PNG, GIF, maksimal 5MB)
                   </p>
                 </div>
 
@@ -175,16 +238,16 @@ export default function GalleryPage() {
                   </p>
                 </div>
 
-                {formData.coverImageUrl && (
+                {coverImagePreview && (
                   <div className="border rounded-lg p-2">
                     <p className="text-xs text-muted-foreground mb-2">Preview Cover:</p>
                     <div className="aspect-video relative bg-gray-100 rounded overflow-hidden">
                       <Image
-                        src={formData.coverImageUrl}
+                        src={coverImagePreview}
                         alt="Preview"
                         fill
                         className="object-cover"
-                        onError={() => setMessage('Gambar cover tidak dapat dimuat. Periksa URL.')}
+                        onError={() => setMessage('Gambar cover tidak dapat dimuat.')}
                       />
                     </div>
                   </div>
@@ -200,9 +263,18 @@ export default function GalleryPage() {
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Batal
                   </Button>
-                  <Button type="submit">
-                    <Upload className="h-4 w-4 mr-2" />
-                    {editingAlbum ? 'Update' : 'Tambah'}
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {editingAlbum ? 'Mengupdate...' : 'Menambahkan...'}
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        {editingAlbum ? 'Update' : 'Tambah'}
+                      </>
+                    )}
                   </Button>
                 </div>
               </form>
@@ -211,14 +283,19 @@ export default function GalleryPage() {
         )}
       </div>
 
-      {message && (
+      {(message || apiError) && (
         <Alert>
           <ImageIcon className="h-4 w-4" />
-          <AlertDescription>{message}</AlertDescription>
+          <AlertDescription>{message || apiError}</AlertDescription>
         </Alert>
       )}
 
-      {albums.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Memuat album...</span>
+        </div>
+      ) : albums.length === 0 ? (
         <Card>
           <CardContent className="flex items-center justify-center py-12">
             <div className="text-center">
@@ -255,10 +332,6 @@ export default function GalleryPage() {
                     target.style.display = 'none';
                   }}
                 />
-                {/* Fallback placeholder */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <FolderOpen className="h-16 w-16 text-gray-400" />
-                </div>
               </div>
               <CardHeader className="pb-2">
                 <div className="space-y-2">
@@ -314,6 +387,7 @@ export default function GalleryPage() {
             {isAdmin ? (
               <>
                 <p>• Klik &quot;Tambah Album&quot; untuk membuat album foto baru</p>
+                <p>• Upload gambar cover dari perangkat Anda (maksimal 5MB)</p>
                 <p>• Upload foto-foto ke Google Drive dan bagikan folder dengan akses publik</p>
                 <p>• Pastikan URL Google Drive dapat diakses oleh semua orang</p>
                 <p>• Gunakan gambar cover yang menarik untuk setiap album</p>

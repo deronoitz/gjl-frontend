@@ -1,0 +1,247 @@
+-- Custom Authentication Schema (No Supabase Auth)
+-- This replaces the previous schema with a simpler approach
+
+-- Drop existing tables if they exist
+DROP TABLE IF EXISTS public.gallery_images CASCADE;
+DROP TABLE IF EXISTS public.albums CASCADE;
+DROP TABLE IF EXISTS public.announcements CASCADE;
+DROP TABLE IF EXISTS public.payments CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
+
+-- Drop existing types
+DROP TYPE IF EXISTS user_role CASCADE;
+DROP TYPE IF EXISTS payment_status CASCADE;
+DROP TYPE IF EXISTS transaction_type CASCADE;
+
+-- Create custom types
+CREATE TYPE user_role AS ENUM ('admin', 'user');
+CREATE TYPE payment_status AS ENUM ('paid', 'pending');
+CREATE TYPE transaction_type AS ENUM ('income', 'expense');
+
+-- Create users table (standalone, no auth.users dependency)
+CREATE TABLE public.users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    house_number VARCHAR(10) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role user_role DEFAULT 'user' NOT NULL,
+    full_name VARCHAR(255),
+    phone VARCHAR(20),
+    email VARCHAR(255), -- Optional for notifications
+    last_login TIMESTAMP WITH TIME ZONE,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create payments table
+CREATE TABLE public.payments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    house_block VARCHAR(10) NOT NULL,
+    payment_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    amount DECIMAL(15,2) NOT NULL,
+    description TEXT NOT NULL,
+    status payment_status DEFAULT 'pending' NOT NULL,
+    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    type transaction_type NOT NULL,
+    category VARCHAR(100) NOT NULL,
+    proof_url VARCHAR(500),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create announcements table
+CREATE TABLE public.announcements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    author_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+    is_published BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create gallery_images table
+CREATE TABLE public.gallery_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    author_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+    album_id UUID,
+    uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create albums table
+CREATE TABLE public.albums (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    cover_image_url VARCHAR(500),
+    drive_url VARCHAR(500),
+    author_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Add foreign key constraint for gallery_images to albums
+ALTER TABLE public.gallery_images 
+ADD CONSTRAINT fk_gallery_images_album 
+FOREIGN KEY (album_id) REFERENCES public.albums(id) ON DELETE SET NULL;
+
+-- Create sessions table for JWT-like session management
+CREATE TABLE public.user_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+    session_token VARCHAR(255) UNIQUE NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for better performance
+CREATE INDEX idx_users_house_number ON public.users(house_number);
+CREATE INDEX idx_users_active ON public.users(is_active);
+CREATE INDEX idx_payments_user_id ON public.payments(user_id);
+CREATE INDEX idx_payments_date ON public.payments(payment_date);
+CREATE INDEX idx_announcements_author ON public.announcements(author_id);
+CREATE INDEX idx_announcements_published ON public.announcements(is_published);
+CREATE INDEX idx_gallery_images_author ON public.gallery_images(author_id);
+CREATE INDEX idx_gallery_images_album ON public.gallery_images(album_id);
+CREATE INDEX idx_albums_author ON public.albums(author_id);
+CREATE INDEX idx_sessions_user_id ON public.user_sessions(user_id);
+CREATE INDEX idx_sessions_token ON public.user_sessions(session_token);
+CREATE INDEX idx_sessions_expires ON public.user_sessions(expires_at);
+
+-- Enable Row Level Security on all tables
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.gallery_images ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.albums ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_sessions ENABLE ROW LEVEL SECURITY;
+
+-- Create function to get current user ID from session
+CREATE OR REPLACE FUNCTION public.current_user_id()
+RETURNS UUID
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+AS $$
+  SELECT user_id FROM public.user_sessions 
+  WHERE session_token = current_setting('app.session_token', true)
+  AND expires_at > NOW();
+$$;
+
+-- Create function to check if current user is admin
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.users 
+    WHERE id = public.current_user_id() 
+    AND role = 'admin' 
+    AND is_active = true
+  );
+$$;
+
+-- RLS Policies for users table
+CREATE POLICY "Users can view their own profile" ON public.users
+    FOR SELECT USING (id = public.current_user_id());
+
+CREATE POLICY "Users can update their own profile" ON public.users
+    FOR UPDATE USING (id = public.current_user_id());
+
+CREATE POLICY "Admins can view all users" ON public.users
+    FOR SELECT USING (public.is_admin());
+
+CREATE POLICY "Admins can insert users" ON public.users
+    FOR INSERT WITH CHECK (public.is_admin());
+
+CREATE POLICY "Admins can update all users" ON public.users
+    FOR UPDATE USING (public.is_admin());
+
+CREATE POLICY "Admins can delete users" ON public.users
+    FOR DELETE USING (public.is_admin());
+
+-- RLS Policies for payments
+CREATE POLICY "Users can view their own payments" ON public.payments
+    FOR SELECT USING (user_id = public.current_user_id());
+
+CREATE POLICY "Users can insert their own payments" ON public.payments
+    FOR INSERT WITH CHECK (user_id = public.current_user_id());
+
+CREATE POLICY "Users can update their own payments" ON public.payments
+    FOR UPDATE USING (user_id = public.current_user_id());
+
+CREATE POLICY "Admins can manage all payments" ON public.payments
+    FOR ALL USING (public.is_admin());
+
+-- RLS Policies for announcements
+CREATE POLICY "Everyone can view published announcements" ON public.announcements
+    FOR SELECT USING (is_published = true AND public.current_user_id() IS NOT NULL);
+
+CREATE POLICY "Admins can manage all announcements" ON public.announcements
+    FOR ALL USING (public.is_admin());
+
+-- RLS Policies for gallery_images
+CREATE POLICY "Everyone can view gallery images" ON public.gallery_images
+    FOR SELECT USING (public.current_user_id() IS NOT NULL);
+
+CREATE POLICY "Admins can manage gallery images" ON public.gallery_images
+    FOR ALL USING (public.is_admin());
+
+-- RLS Policies for albums
+CREATE POLICY "Everyone can view albums" ON public.albums
+    FOR SELECT USING (public.current_user_id() IS NOT NULL);
+
+CREATE POLICY "Admins can manage albums" ON public.albums
+    FOR ALL USING (public.is_admin());
+
+-- RLS Policies for user_sessions
+CREATE POLICY "Users can view their own sessions" ON public.user_sessions
+    FOR SELECT USING (user_id = public.current_user_id());
+
+CREATE POLICY "Users can delete their own sessions" ON public.user_sessions
+    FOR DELETE USING (user_id = public.current_user_id());
+
+-- Create function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Add triggers to update updated_at automatically
+CREATE TRIGGER update_users_updated_at
+    BEFORE UPDATE ON public.users
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_payments_updated_at
+    BEFORE UPDATE ON public.payments
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_announcements_updated_at
+    BEFORE UPDATE ON public.announcements
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_gallery_images_updated_at
+    BEFORE UPDATE ON public.gallery_images
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_albums_updated_at
+    BEFORE UPDATE ON public.albums
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- Function to clean expired sessions
+CREATE OR REPLACE FUNCTION public.clean_expired_sessions()
+RETURNS void
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  DELETE FROM public.user_sessions WHERE expires_at < NOW();
+$$;
