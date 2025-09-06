@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Home, LogOut, DollarSign, CreditCard, Camera, Users, Megaphone, Settings, Lock } from 'lucide-react';
+import { Home, LogOut, DollarSign, CreditCard, Camera, Users, Megaphone, Settings, Lock, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -33,6 +33,7 @@ export default function Navigation() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -50,71 +51,174 @@ export default function Navigation() {
   const navItems = isAdmin ? adminNavItems : navigationItems;
 
   return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center space-x-8">
-            <Link href="/dashboard" className="flex items-center space-x-2">
-              {/* <Home className="h-8 w-8 text-blue-600" /> */}
-              <Image src="/gjl-logo.png" alt="GJL Logo" className="w-24" width={200} height={200}/>
-              {/* <span className="text-xl font-bold">Griya Jannatin Leyangan</span> */}
-            </Link>
-            
-            <div className="hidden md:flex space-x-4">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    pathname === item.href
-                      ? 'bg-emerald-100 text-emerald-900'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
+    <>
+      <nav className="bg-white shadow-sm border-b relative z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center space-x-8">
+              <Link href="/dashboard" className="flex items-center space-x-2">
+                <Image src="/gjl-logo.png" alt="GJL Logo" className="w-24" width={200} height={200}/>
+              </Link>
+              
+              {/* Desktop Navigation */}
+              <div className="hidden md:flex space-x-4">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      pathname === item.href
+                        ? 'bg-emerald-100 text-emerald-900'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              {/* Desktop User Info */}
+              <div className="hidden md:flex items-center space-x-2">
+                <Badge variant={isAdmin ? 'destructive' : 'secondary'}>
+                  {isAdmin ? 'Admin' : 'User'}
+                </Badge>
+                <span className="text-sm font-medium">{user.houseNumber}</span>
+              </div>
+              
+              {/* Mobile menu button */}
+              <div className="md:hidden">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="h-8 w-8"
+                  aria-label={isMobileMenuOpen ? 'Tutup menu' : 'Buka menu'}
                 >
-                  {item.name}
-                </Link>
-              ))}
+                  {isMobileMenuOpen ? (
+                    <X className="h-5 w-5" />
+                  ) : (
+                    <Menu className="h-5 w-5" />
+                  )}
+                </Button>
+              </div>
+              
+              {/* Desktop Dropdown */}
+              <div className="hidden md:block">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback>
+                          {user.houseNumber.slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end">
+                    <DropdownMenuItem onClick={() => setIsChangePasswordOpen(true)}>
+                      <Lock className="mr-2 h-4 w-4" />
+                      <span>Ganti Password</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Keluar</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Badge variant={isAdmin ? 'destructive' : 'secondary'}>
-                {isAdmin ? 'Admin' : 'User'}
-              </Badge>
-              <span className="text-sm font-medium">{user.houseNumber}</span>
+          {/* Mobile Navigation Menu */}
+          {isMobileMenuOpen && (
+            <div className="md:hidden border-t">
+              <div className="px-2 pt-2 pb-3 space-y-1 bg-gray-50">
+                {/* User Info in Mobile */}
+                <div className="flex items-center justify-between px-3 py-3 bg-white rounded-md mb-3 shadow-sm">
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback>
+                        {user.houseNumber.slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-gray-900">{user.houseNumber}</span>
+                      <Badge 
+                        variant={isAdmin ? 'destructive' : 'secondary'}
+                        className="w-fit text-xs mt-1"
+                      >
+                        {isAdmin ? 'Admin' : 'User'}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Navigation Links */}
+                <div className="space-y-1">
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`flex items-center px-3 py-3 rounded-md text-sm font-medium transition-colors ${
+                          pathname === item.href
+                            ? 'bg-emerald-100 text-emerald-900 border-l-4 border-emerald-500'
+                            : 'text-gray-700 hover:text-gray-900 hover:bg-white'
+                        }`}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Icon className="mr-3 h-5 w-5" />
+                        {item.name}
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {/* Mobile Action Buttons */}
+                <div className="border-t pt-3 mt-3 space-y-1">
+                  <button
+                    onClick={() => {
+                      setIsChangePasswordOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center w-full px-3 py-3 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-white transition-colors"
+                  >
+                    <Lock className="mr-3 h-5 w-5" />
+                    Ganti Password
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="flex items-center w-full px-3 py-3 rounded-md text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut className="mr-3 h-5 w-5" />
+                    Keluar
+                  </button>
+                </div>
+              </div>
             </div>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>
-                      {user.houseNumber.slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end">
-                <DropdownMenuItem onClick={() => setIsChangePasswordOpen(true)}>
-                  <Lock className="mr-2 h-4 w-4" />
-                  <span>Ganti Password</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Keluar</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          )}
         </div>
-      </div>
-      
-      <ChangePasswordDialog 
-        open={isChangePasswordOpen}
-        onOpenChange={setIsChangePasswordOpen}
-      />
-    </nav>
+        
+        <ChangePasswordDialog 
+          open={isChangePasswordOpen}
+          onOpenChange={setIsChangePasswordOpen}
+        />
+      </nav>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-25 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+    </>
   );
 }

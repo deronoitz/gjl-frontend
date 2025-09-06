@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import Image from 'next/image';
 
 export default function LoginForm() {
   const [formData, setFormData] = useState({
@@ -87,9 +88,10 @@ export default function LoginForm() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle>Login</CardTitle>
+          <Image src="/gjl-logo.png" alt="GJL Logo" className="mx-auto mb-4 w-32" width={200} height={200}/>
+          <CardTitle className="text-2xl font-bold">Masuk ke GJL</CardTitle>
           <CardDescription>
-            Enter your house number and password to access the system
+            Masukkan nomor rumah dan kata sandi Anda untuk mengakses sistem
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -101,12 +103,12 @@ export default function LoginForm() {
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="houseNumber">House Number</Label>
+              <Label htmlFor="houseNumber">Blok Rumah</Label>
               <Input
                 id="houseNumber"
                 name="houseNumber"
                 type="text"
-                placeholder="e.g., A-01"
+                placeholder="contoh: A1"
                 value={formData.houseNumber}
                 onChange={handleChange}
                 disabled={isLoading}
