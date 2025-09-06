@@ -161,7 +161,7 @@ export class CustomAuth {
       // Get user data
       const user = Array.isArray(session.users) ? session.users[0] : session.users;
 
-      return this.mapDbUserToAuthUser(user as any);
+      return this.mapDbUserToAuthUser(user as { id: string; house_number: string; name: string; role: 'admin' | 'user'; created_at?: string; updated_at?: string; });
     } catch (error) {
       console.error('Session verification error:', error);
       return null;
@@ -190,7 +190,7 @@ export class CustomAuth {
    */
   static async updateUser(userId: string, updates: Partial<RegisterData>): Promise<AuthUser | null> {
     try {
-      const updateData: any = {};
+      const updateData: Record<string, string> = {};
 
       if (updates.houseNumber) updateData.house_number = updates.houseNumber;
       if (updates.name) updateData.name = updates.name;
@@ -232,7 +232,7 @@ export class CustomAuth {
   /**
    * Map database user to AuthUser interface
    */
-  private static mapDbUserToAuthUser(dbUser: any): AuthUser {
+  private static mapDbUserToAuthUser(dbUser: { id: string; house_number: string; name: string; role: 'admin' | 'user'; created_at?: string; updated_at?: string; }): AuthUser {
     return {
       id: dbUser.id,
       houseNumber: dbUser.house_number,

@@ -4,23 +4,29 @@ export const mockUsers: User[] = [
   {
     id: '1',
     houseNumber: 'A001',
-    password: 'admin123',
+    name: 'Admin User',
+    password_hash: 'admin123', // In real app this would be hashed
     role: 'admin',
-    createdAt: new Date('2024-01-01')
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '2',
     houseNumber: 'A002',
-    password: 'user123',
+    name: 'User One',
+    password_hash: 'user123', // In real app this would be hashed
     role: 'user',
-    createdAt: new Date('2024-01-15')
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date('2024-01-15')
   },
   {
     id: '3',
     houseNumber: 'B001',
-    password: 'user456',
+    name: 'User Two',
+    password_hash: 'user456', // In real app this would be hashed
     role: 'user',
-    createdAt: new Date('2024-02-01')
+    createdAt: new Date('2024-02-01'),
+    updatedAt: new Date('2024-02-01')
   }
 ];
 

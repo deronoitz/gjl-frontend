@@ -6,9 +6,10 @@ import bcrypt from 'bcryptjs';
 // GET /api/users/[id] - Get single user (admin only)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const sessionToken = request.cookies.get('session_token')?.value;
 
     if (!sessionToken) {
@@ -23,7 +24,7 @@ export async function GET(
     const { data: user, error } = await supabase
       .from('users')
       .select('id, house_number, role, name, created_at, updated_at')
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single();
 
     if (error || !user) {
@@ -40,9 +41,10 @@ export async function GET(
 // PUT /api/users/[id] - Update user (admin only)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const sessionToken = request.cookies.get('session_token')?.value;
 
     if (!sessionToken) {
@@ -69,7 +71,7 @@ export async function PUT(
       .from('users')
       .select('house_number, id')
       .eq('house_number', houseNumber)
-      .neq('id', params.id)
+      .neq('id', resolvedParams.id)
       .single();
 
     if (existingUser) {
@@ -102,7 +104,7 @@ export async function PUT(
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
       .update(updateData)
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .select('id, house_number, name, role, created_at, updated_at')
       .single();
 
@@ -124,9 +126,10 @@ export async function PUT(
 // DELETE /api/users/[id] - Delete user (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const sessionToken = request.cookies.get('session_token')?.value;
 
     if (!sessionToken) {
@@ -139,7 +142,7 @@ export async function DELETE(
     }
 
     // Don't allow deleting yourself
-    if (session.id === params.id) {
+    if (session.id === resolvedParams.id) {
       return NextResponse.json(
         { error: 'Cannot delete your own account' },
         { status: 400 }
@@ -149,7 +152,7 @@ export async function DELETE(
     const { error } = await supabase
       .from('users')
       .delete()
-      .eq('id', params.id);
+      .eq('id', resolvedParams.id);
 
     if (error) {
       console.error('Error deleting user:', error);

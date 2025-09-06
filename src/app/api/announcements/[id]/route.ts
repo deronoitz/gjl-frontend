@@ -3,8 +3,9 @@ import { CustomAuth } from '@/lib/custom-auth';
 import { supabaseService } from '@/lib/supabase';
 
 // GET /api/announcements/[id] - Get single announcement
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const resolvedParams = await params;
     const { data: announcement, error } = await supabaseService
       .from('announcements')
       .select(`
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         updated_at,
         author_id
       `)
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single();
 
     if (error) {
@@ -53,8 +54,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PUT /api/announcements/[id] - Update announcement (admin only)
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const resolvedParams = await params;
     const sessionToken = request.cookies.get('session_token')?.value;
 
     if (!sessionToken) {
@@ -93,7 +95,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const { data: existingAnnouncement, error: checkError } = await supabaseService
       .from('announcements')
       .select('id')
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single();
 
     if (checkError || !existingAnnouncement) {
@@ -107,7 +109,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         content: content.trim(),
         updated_at: new Date().toISOString()
       })
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .select(`
         id,
         title,
@@ -153,8 +155,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE /api/announcements/[id] - Delete announcement (admin only)
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const resolvedParams = await params;
     const sessionToken = request.cookies.get('session_token')?.value;
 
     if (!sessionToken) {
@@ -170,7 +173,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const { data: existingAnnouncement, error: checkError } = await supabaseService
       .from('announcements')
       .select('id')
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single();
 
     if (checkError || !existingAnnouncement) {
@@ -180,7 +183,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const { error } = await supabaseService
       .from('announcements')
       .delete()
-      .eq('id', params.id);
+      .eq('id', resolvedParams.id);
 
     if (error) {
       console.error('Error deleting announcement:', error);

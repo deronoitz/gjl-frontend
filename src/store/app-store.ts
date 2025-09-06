@@ -53,7 +53,7 @@ interface AppState {
 
 export const useAppStore = create<AppState>()(
   devtools(
-    (set, get) => ({
+    (set) => ({
       // Initial state
       users: [],
       payments: [],
@@ -159,9 +159,11 @@ export const useAppStore = create<AppState>()(
           const users = data.map((profile) => ({
             id: profile.id,
             houseNumber: profile.house_number,
-            password: '', // Don't expose password
+            name: profile.name || 'Unknown',
+            password_hash: '', // Don't expose password hash
             role: profile.role as 'admin' | 'user',
             createdAt: new Date(profile.created_at),
+            updatedAt: new Date(profile.updated_at || profile.created_at),
           }));
 
           set({ users });

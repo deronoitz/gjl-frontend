@@ -11,16 +11,17 @@ const supabaseAdmin = createClient(
 // GET - Fetch single album
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const { data: album, error } = await supabaseAdmin
       .from('albums')
       .select(`
         *,
         users!albums_author_id_fkey(name)
       `)
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single();
 
     if (error) {
@@ -44,9 +45,10 @@ export async function GET(
 // PUT - Update album
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const formData = await request.formData();
     
     const title = formData.get('title') as string;
@@ -64,7 +66,7 @@ export async function PUT(
     const { data: currentAlbum, error: fetchError } = await supabaseAdmin
       .from('albums')
       .select('cover_image_url')
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single();
 
     if (fetchError) {
@@ -126,7 +128,7 @@ export async function PUT(
         cover_image_url: coverImageUrl,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .select(`
         *,
         users!albums_author_id_fkey(name)
@@ -154,14 +156,15 @@ export async function PUT(
 // DELETE - Delete album
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     // Get current album data to find the image file
     const { data: currentAlbum, error: fetchError } = await supabaseAdmin
       .from('albums')
       .select('cover_image_url')
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single();
 
     if (fetchError) {
@@ -175,7 +178,7 @@ export async function DELETE(
     const { error: deleteError } = await supabaseAdmin
       .from('albums')
       .delete()
-      .eq('id', params.id);
+      .eq('id', resolvedParams.id);
 
     if (deleteError) {
       console.error('Error deleting album:', deleteError);

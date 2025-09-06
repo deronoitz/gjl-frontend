@@ -91,7 +91,7 @@ export default function PaymentPage() {
     } else {
       console.log('No user found, skipping payment status fetch');
     }
-  }, [user?.id, selectedYear]);
+  }, [user?.id, selectedYear, fetchPaymentStatus]);
 
   if (!user) return null;
 

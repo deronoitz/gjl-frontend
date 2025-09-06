@@ -1,12 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useAppStore } from '@/store/app-store';
 
-interface UseUsersOptions {
-  autoFetch?: boolean;
-}
-
-export function useUsers(options: UseUsersOptions = {}) {
-  const { autoFetch = true } = options;
+export function useUsers() {
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -52,9 +47,11 @@ export function useUsers(options: UseUsersOptions = {}) {
         addUser({
           id: newUser.id,
           houseNumber: newUser.house_number,
-          password: '', // Don't store password in client
+          name: newUser.name,
+          password_hash: '', // Don't store password hash in client
           role: newUser.role,
           createdAt: new Date(newUser.created_at),
+          updatedAt: new Date(newUser.updated_at || newUser.created_at),
         });
 
         return newUser;
