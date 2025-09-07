@@ -23,11 +23,12 @@ export interface Payment {
   paymentDate: Date;
   amount: number;
   description: string;
-  status: 'paid' | 'pending';
+  status: 'paid' | 'pending' | 'expired';
   userId: string;
   type: 'income' | 'expense';
   category: string;
   proofUrl?: string;
+  payment_url?: string | null;
 }
 
 export interface Announcement {

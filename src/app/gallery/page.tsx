@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Calendar, Image as ImageIcon, Edit, Trash2, Upload, ExternalLink, FolderOpen, Loader2, Play } from 'lucide-react';
+import { Plus, Calendar, Image as ImageIcon, Edit, Trash2, Upload, ExternalLink, FolderOpen, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import Image from 'next/image';
@@ -337,25 +337,19 @@ export default function GalleryPage() {
           {/* Mobile-Optimized Grid */}
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {albums.map((album) => (
-              <Card key={album.id} className="overflow-hidden hover:shadow-lg transition-all duration-200 group">
+              <Card key={album.id} className="overflow-hidden">
                 <div className="aspect-video relative bg-gray-100 overflow-hidden">
                   <Image
                     src={album.coverImageUrl}
                     alt={album.title}
                     fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="object-cover"
                     onError={(e) => {
                       // Show placeholder if image fails to load
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
                     }}
                   />
-                  {/* Play overlay for better UX */}
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                    <div className="bg-white/90 rounded-full p-2">
-                      <Play className="h-5 w-5 text-gray-700 fill-current" />
-                    </div>
-                  </div>
                 </div>
                 
                 <CardHeader className="pb-2 px-4 pt-4">

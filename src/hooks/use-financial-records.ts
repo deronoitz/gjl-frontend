@@ -13,6 +13,9 @@ export interface FinancialRecord {
   created_by: string;
   created_at: string;
   updated_at: string;
+  status: 'pending' | 'done' | 'expired';
+  payment_url: string | null;
+  reference_id: string | null;
   user?: {
     id: string;
     name: string;
@@ -50,6 +53,8 @@ export interface CreateFinancialRecordData {
   house_block?: string;
   user_uuid?: string;
   proof_url?: string;
+  status?: 'pending' | 'done' | 'expired';
+  payment_url?: string;
 }
 
 export interface FinancialRecordsFilters {
@@ -60,6 +65,7 @@ export interface FinancialRecordsFilters {
   house_block?: string;
   page?: number;
   limit?: number;
+  show_all_status?: string; // Special parameter for payment page to show all statuses
 }
 
 export interface HouseBlocksResponse {

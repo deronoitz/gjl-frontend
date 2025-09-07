@@ -859,7 +859,7 @@ export default function FinancePage() {
                 <div>
                   <Label className="text-sm font-medium">Status</Label>
                   <div className="mt-1">
-                    <Badge variant="default">Tercatat</Badge>
+                    <Badge variant="default" className="bg-green-100 text-green-800">Selesai</Badge>
                   </div>
                 </div>
               </div>

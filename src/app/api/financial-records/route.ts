@@ -13,6 +13,8 @@ const createFinancialRecordSchema = z.object({
   house_block: z.string().optional(),
   user_uuid: z.string().uuid().optional(),
   proof_url: z.string().url().optional(),
+  status: z.enum(['pending', 'done', 'expired']).optional(),
+  payment_url: z.string().url().optional(),
 });
 
 // GET - List financial records with filtering
@@ -20,22 +22,30 @@ export async function GET(request: NextRequest) {
   try {
     // Check authentication
     const user = await getAuthenticatedUser(request);
-    if (!canAccessFinancialRecords(user)) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Admin access required.' },
-        { status: 401 }
-      );
-    }
-
+    
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const category = searchParams.get('category');
     const month = searchParams.get('month');
     const year = searchParams.get('year');
     const house_block = searchParams.get('house_block');
+    const show_all_status = searchParams.get('show_all_status'); // Parameter to show all statuses
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = (page - 1) * limit;
+    
+    // Users can only see their own records, admins can see all
+    const isAdmin = canAccessFinancialRecords(user);
+    
+    if (!isAdmin) {
+      // Regular users can only see records related to their house block/user
+      if (!user || (!house_block || house_block !== user.houseNumber)) {
+        return NextResponse.json(
+          { error: 'Unauthorized. You can only view your own payment records.' },
+          { status: 401 }
+        );
+      }
+    }
 
     // Get user from session/JWT (implement your auth logic here)
     // For now, we'll use service client assuming admin access
@@ -67,6 +77,13 @@ export async function GET(request: NextRequest) {
     if (house_block) {
       query = query.eq('house_block', house_block);
     }
+    
+    // Only show records with 'done' status for financial reports (admin users)
+    // Regular users can see all their payment records regardless of status
+    // Special case: if show_all_status is true, show all statuses even for admins (payment page)
+    if (isAdmin && !show_all_status) {
+      query = query.eq('status', 'done');
+    }
     if (month && year) {
       const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
       const endDate = new Date(parseInt(year), parseInt(month), 0);
@@ -88,6 +105,24 @@ export async function GET(request: NextRequest) {
     if (type) countQuery.eq('type', type);
     if (category) countQuery.eq('category', category);
     if (house_block) countQuery.eq('house_block', house_block);
+    
+    // Only count records with 'done' status for financial reports (admin users)
+    if (isAdmin && !show_all_status) {
+      countQuery.eq('status', 'done');
+    }
+    
+    // Apply date filters to count query
+    if (month && year) {
+      const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      const endDate = new Date(parseInt(year), parseInt(month), 0);
+      countQuery.gte('date', startDate.toISOString().split('T')[0])
+               .lte('date', endDate.toISOString().split('T')[0]);
+    } else if (year) {
+      const startDate = new Date(parseInt(year), 0, 1);
+      const endDate = new Date(parseInt(year), 11, 31);
+      countQuery.gte('date', startDate.toISOString().split('T')[0])
+               .lte('date', endDate.toISOString().split('T')[0]);
+    }
     if (month && year) {
       const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
       const endDate = new Date(parseInt(year), parseInt(month), 0);
@@ -115,6 +150,29 @@ export async function GET(request: NextRequest) {
     const summaryQuery = supabaseService
       .from('financial_records')
       .select('type, amount');
+    
+    // Apply same status filtering for summary
+    if (isAdmin && !show_all_status) {
+      summaryQuery.eq('status', 'done');
+    }
+    
+    // Apply other filters to summary if provided
+    if (type) summaryQuery.eq('type', type);
+    if (category) summaryQuery.eq('category', category);
+    if (house_block) summaryQuery.eq('house_block', house_block);
+    
+    // Apply date filters to summary query
+    if (month && year) {
+      const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      const endDate = new Date(parseInt(year), parseInt(month), 0);
+      summaryQuery.gte('date', startDate.toISOString().split('T')[0])
+                  .lte('date', endDate.toISOString().split('T')[0]);
+    } else if (year) {
+      const startDate = new Date(parseInt(year), 0, 1);
+      const endDate = new Date(parseInt(year), 11, 31);
+      summaryQuery.gte('date', startDate.toISOString().split('T')[0])
+                  .lte('date', endDate.toISOString().split('T')[0]);
+    }
     
     const { data: summaryData } = await summaryQuery;
     
@@ -169,6 +227,8 @@ export async function POST(request: NextRequest) {
       .insert({
         ...validatedData,
         created_by: user!.id,
+        // Set default status to 'done' for manual input if not specified
+        status: validatedData.status || 'done',
       })
       .select(`
         *,

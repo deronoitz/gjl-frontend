@@ -90,7 +90,7 @@ export default function DashboardPage() {
                     </div>
                     
                     {/* Content - truncated on mobile */}
-                    <p className="text-xs md:text-sm text-muted-foreground leading-relaxed line-clamp-2 md:line-clamp-none whitespace-pre-line">
+                    <p className="text-xs md:text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                       {announcement.content}
                     </p>
                     
