@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, Home, Calendar, ShieldCheck, User as UserIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
@@ -107,153 +107,241 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Kelola Warga</h1>
-          <p className="text-muted-foreground">
-            Kelola warga dan admin yang memiliki akses ke sistem.
-          </p>
+    <div className="space-y-4 md:space-y-6">
+      {/* Mobile-Optimized Header */}
+      <div className="space-y-3">
+        <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
+          <div className="space-y-1">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
+              Kelola Warga
+            </h1>
+            <p className="text-sm md:text-base text-muted-foreground">
+              Kelola warga dan admin yang memiliki akses ke sistem.
+            </p>
+          </div>
+          
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetDialog();
+          }}>
+            <DialogTrigger asChild>
+              <Button className="w-full md:w-auto">
+                <Plus className="h-4 w-4 mr-2" />
+                Tambah User
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="mx-2 md:mx-0 w-[calc(100vw-1rem)] md:w-full max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-lg md:text-xl">
+                  {editingUser ? 'Edit User' : 'Tambah User Baru'}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="houseNumber" className="text-sm font-medium">Nomor Rumah</Label>
+                  <Input
+                    id="houseNumber"
+                    value={formData.houseNumber}
+                    onChange={(e) => setFormData({ ...formData, houseNumber: e.target.value })}
+                    placeholder="Contoh: A-01"
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-medium">Nama</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Nama lengkap"
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium">
+                    Password {editingUser && <span className="text-xs text-muted-foreground">(kosongkan jika tidak ingin mengubah)</span>}
+                  </Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role" className="text-sm font-medium">Role</Label>
+                  <select
+                    id="role"
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'user' })}
+                    className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                {message && (
+                  <Alert className="border-orange-200 bg-orange-50">
+                    <AlertDescription className="text-sm">{message}</AlertDescription>
+                  </Alert>
+                )}
+                <div className="flex flex-col-reverse md:flex-row justify-end space-y-2 space-y-reverse md:space-y-0 md:space-x-2 pt-2">
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="h-11">
+                    Batal
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting} className="h-11">
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (editingUser ? 'Update' : 'Tambah')}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetDialog();
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah User
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editingUser ? 'Edit User' : 'Tambah User Baru'}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="houseNumber">Nomor Rumah</Label>
-                <Input
-                  id="houseNumber"
-                  value={formData.houseNumber}
-                  onChange={(e) => setFormData({ ...formData, houseNumber: e.target.value })}
-                  placeholder="Contoh: A-01"
-                />
-              </div>
-              <div>
-                <Label htmlFor="name">Nama</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Nama lengkap"
-                />
-              </div>
-              <div>
-                <Label htmlFor="password">
-                  Password {editingUser && "(kosongkan jika tidak ingin mengubah)"}
-                </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="role">Role</Label>
-                <select
-                  id="role"
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'user' })}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-              {message && (
-                <Alert>
-                  <AlertDescription>{message}</AlertDescription>
-                </Alert>
-              )}
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Batal
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Loading...' : (editingUser ? 'Update' : 'Tambah')}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
 
       {(message || error) && (
-        <Alert>
-          <AlertDescription>{message || error}</AlertDescription>
+        <Alert className="border-red-200 bg-red-50">
+          <AlertDescription className="text-sm">{message || error}</AlertDescription>
         </Alert>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Daftar Warga</CardTitle>
+      {/* Mobile Card Layout / Desktop Table */}
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-3 md:pb-0">
+          <CardTitle className="text-lg md:text-xl flex items-center gap-2">
+            Daftar Warga ({users.length})
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0 md:px-6">
           {loading ? (
             <div className="flex items-center justify-center p-8">
               <Loader2 className="h-6 w-6 animate-spin mr-2" />
-              Loading users...
+              <span className="text-sm">Loading users...</span>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nomor Rumah</TableHead>
-                  <TableHead>Nama</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Tanggal Daftar</TableHead>
-                  <TableHead>Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile Card Layout */}
+              <div className="md:hidden space-y-3 px-4 pb-4">
                 {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.house_number}</TableCell>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>
-                      <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'} className="capitalize">
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(user.created_at), 'dd MMM yyyy', { locale: id })}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(user)}
+                  <Card key={user.id} className="border border-gray-200 hover:shadow-sm py-0 transition-shadow">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center gap-2">
+                            <Home className="h-4 w-4 text-gray-600" />
+                            <span className="font-semibold text-base">{user.house_number}</span>
+                          </div>
+                          <p className="text-sm text-gray-600 font-medium">{user.name}</p>
+                        </div>
+                        <Badge 
+                          variant={user.role === 'admin' ? 'destructive' : 'secondary'} 
+                          className="text-xs"
                         >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(user.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          {user.role === 'admin' ? (
+                            <>
+                              <ShieldCheck className="h-3 w-3 mr-1" />
+                              Admin
+                            </>
+                          ) : (
+                            <>
+                              <UserIcon className="h-3 w-3 mr-1" />
+                              User
+                            </>
+                          )}
+                        </Badge>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                      
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <Calendar className="h-3 w-3" />
+                          {format(new Date(user.created_at), 'dd MMM yyyy', { locale: id })}
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(user)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(user.id)}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
-              </TableBody>
-            </Table>
+                
+                {users.length === 0 && (
+                  <div className="text-center py-8">
+                    <UserIcon className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                    <p className="text-sm text-muted-foreground">Belum ada user terdaftar</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop Table Layout */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nomor Rumah</TableHead>
+                      <TableHead>Nama</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Tanggal Daftar</TableHead>
+                      <TableHead>Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.house_number}</TableCell>
+                        <TableCell>{user.name}</TableCell>
+                        <TableCell>
+                          <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'} className="capitalize">
+                            {user.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(user.created_at), 'dd MMM yyyy', { locale: id })}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(user)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(user.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Megaphone } from 'lucide-react';
+import { Plus, Edit, Trash2, Megaphone, Calendar, User, MessageSquare, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
@@ -112,98 +112,114 @@ export default function AdminAnnouncementsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Kelola Pengumuman</h1>
-          <p className="text-muted-foreground">
-            Buat dan kelola pengumuman untuk warga perumahan
-          </p>
+    <div className="space-y-3 md:space-y-4">
+      {/* Mobile-Optimized Header */}
+      <div className="space-y-2">
+        <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
+          <div className="space-y-1">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
+              Kelola Pengumuman
+            </h1>
+            <p className="text-sm md:text-base text-muted-foreground">
+              Buat dan kelola pengumuman untuk warga perumahan
+            </p>
+          </div>
+          
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetDialog();
+          }}>
+            <DialogTrigger asChild>
+              <Button className="w-full md:w-auto">
+                <Plus className="h-4 w-4 mr-2" />
+                Buat Pengumuman
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="mx-2 md:mx-0 w-[calc(100vw-1rem)] md:w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-lg md:text-xl">
+                  {editingId ? 'Edit Pengumuman' : 'Buat Pengumuman Baru'}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="title" className="text-sm font-medium">Judul Pengumuman</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Masukkan judul pengumuman"
+                    className="h-10"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="content" className="text-sm font-medium">Konten Pengumuman</Label>
+                  <Textarea
+                    id="content"
+                    value={formData.content}
+                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    placeholder="Masukkan konten pengumuman..."
+                    rows={5}
+                    className="min-h-[100px] resize-none"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Tulis pengumuman dengan jelas dan lengkap
+                  </p>
+                </div>
+                {message && (
+                  <Alert>
+                    <AlertDescription className="text-sm">{message}</AlertDescription>
+                  </Alert>
+                )}
+                <div className="flex flex-col-reverse md:flex-row justify-end space-y-2 space-y-reverse md:space-y-0 md:space-x-2 pt-1">
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="h-10">
+                    Batal
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting} className="h-10">
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Menyimpan...
+                      </>
+                    ) : (
+                      <>
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        {editingId ? 'Update' : 'Publikasikan'}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetDialog();
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Buat Pengumuman
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
-                {editingId ? 'Edit Pengumuman' : 'Buat Pengumuman Baru'}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="title">Judul Pengumuman</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Masukkan judul pengumuman"
-                />
-              </div>
-              <div>
-                <Label htmlFor="content">Konten Pengumuman</Label>
-                <Textarea
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  placeholder="Masukkan konten pengumuman..."
-                  rows={6}
-                />
-              </div>
-              {message && (
-                <Alert>
-                  <AlertDescription>{message}</AlertDescription>
-                </Alert>
-              )}
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Batal
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting 
-                    ? 'Menyimpan...' 
-                    : editingId 
-                      ? 'Update' 
-                      : 'Publikasikan'
-                  }
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
 
       {message && (
         <Alert>
           <Megaphone className="h-4 w-4" />
-          <AlertDescription>{message}</AlertDescription>
+          <AlertDescription className="text-sm">{message}</AlertDescription>
         </Alert>
       )}
 
       {/* Announcements List */}
-      <div className="space-y-4">
+      <div className="space-y-2 md:space-y-3">
         {isLoading ? (
           <Card>
-            <CardContent className="flex items-center justify-center py-12">
+            <CardContent className="flex items-center justify-center py-8">
               <div className="text-center">
-                <Megaphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold">Memuat pengumuman...</h3>
+                <Loader2 className="h-6 w-6 animate-spin mx-auto mb-3 text-gray-500" />
+                <h3 className="text-base font-semibold mb-1">Memuat pengumuman...</h3>
+                <p className="text-sm text-muted-foreground">Mohon tunggu sebentar</p>
               </div>
             </CardContent>
           </Card>
         ) : error ? (
           <Card>
-            <CardContent className="flex items-center justify-center py-12">
+            <CardContent className="flex items-center justify-center py-8">
               <div className="text-center">
                 <Alert>
-                  <AlertDescription>
+                  <AlertDescription className="text-sm">
                     Gagal memuat pengumuman: {error}
                   </AlertDescription>
                 </Alert>
@@ -211,15 +227,17 @@ export default function AdminAnnouncementsPage() {
             </CardContent>
           </Card>
         ) : announcements.length === 0 ? (
-          <Card>
-            <CardContent className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <Megaphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold">Belum ada pengumuman</h3>
-                <p className="text-muted-foreground mb-4">
-                  Mulai dengan membuat pengumuman pertama
+          <Card className="border-dashed border-2 border-gray-200">
+            <CardContent className="flex items-center justify-center py-8">
+              <div className="text-center max-w-sm">
+                <div className="bg-gray-100 rounded-full p-2 w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                  <Megaphone className="h-6 w-6 text-gray-500" />
+                </div>
+                <h3 className="text-base font-semibold mb-1">Belum ada pengumuman</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Mulai dengan membuat pengumuman pertama untuk warga
                 </p>
-                <Button onClick={() => setIsDialogOpen(true)}>
+                <Button onClick={() => setIsDialogOpen(true)} className="w-full md:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Buat Pengumuman
                 </Button>
@@ -227,48 +245,125 @@ export default function AdminAnnouncementsPage() {
             </CardContent>
           </Card>
         ) : (
-          announcements.map((announcement) => (
-            <Card key={announcement.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-xl">{announcement.title}</CardTitle>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="outline">
-                        {format(new Date(announcement.createdAt), 'dd MMM yyyy HH:mm', { locale: id })}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        oleh {announcement.authorName || 'Admin'}
-                      </span>
+          <>
+            {/* Announcement Count */}
+            <div className="text-sm text-muted-foreground flex items-center gap-1">
+              <MessageSquare className="h-4 w-4" />
+              Menampilkan {announcements.length} pengumuman
+            </div>
+            
+            {announcements.map((announcement, index) => (
+              <Card key={announcement.id} className={`overflow-hidden hover:shadow-md transition-shadow ${
+                index === 0 ? 'border-gray-300 bg-gray-50/50' : 'border-gray-200'
+              }`}>
+                {/* Mobile-optimized header */}
+                <CardHeader className="pb-2">
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <CardTitle className="text-base md:text-lg leading-tight flex-1 line-clamp-2">
+                        {announcement.title}
+                      </CardTitle>
+                      {/* Mobile action buttons */}
+                      <div className="flex space-x-1 md:hidden">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(announcement)}
+                          className="h-7 w-7 p-0"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(announcement.id)}
+                          className="h-7 w-7 p-0 hover:bg-gray-50"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {/* Metadata row */}
+                    <div className="flex flex-col space-y-1 md:flex-row md:items-center md:justify-between md:space-y-0">
+                      <div className="flex flex-col space-y-1 md:flex-row md:items-center md:space-y-0 md:space-x-3">
+                        <Badge variant={index === 0 ? "default" : "outline"} className="text-xs w-fit flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {format(new Date(announcement.createdAt), 'dd MMM yyyy', { locale: id })}
+                        </Badge>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <User className="h-3 w-3" />
+                          <span>oleh {announcement.authorName || 'Admin'}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Desktop action buttons */}
+                      <div className="hidden md:flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(announcement)}
+                          className="h-7 text-xs"
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(announcement.id)}
+                          className="h-7 text-xs hover:bg-gray-50"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Hapus
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(announcement)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(announcement.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                </CardHeader>
+                
+                <CardContent className="pt-0">
+                  <div className="bg-gray-50 rounded-lg p-2 md:p-3">
+                    <p className="text-sm md:text-base text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      {announcement.content}
+                    </p>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground whitespace-pre-wrap">
-                  {announcement.content}
-                </p>
-              </CardContent>
-            </Card>
-          ))
+                </CardContent>
+              </Card>
+            ))}
+          </>
         )}
       </div>
+      
+      {/* Info Section */}
+      {announcements.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm md:text-base flex items-center gap-2">
+              <Megaphone className="h-4 w-4 text-gray-600" />
+              Tips Pengumuman
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-1 text-xs md:text-sm text-muted-foreground">
+              <div className="grid gap-1">
+                <div className="flex items-start gap-2">
+                  <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></div>
+                  <span>Gunakan judul yang jelas dan mudah dipahami</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></div>
+                  <span>Tulis informasi yang lengkap dan akurat</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></div>
+                  <span>Pengumuman terbaru akan muncul di dashboard warga</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

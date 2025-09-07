@@ -248,20 +248,22 @@ export default function PaymentPage() {
   const monthlyStatus = generateMonthlyPaymentStatus();
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      {/* Mobile-Responsive Header */}
+      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Pembayaran Iuran</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Pembayaran Iuran</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">
             Kelola pembayaran iuran bulanan untuk {user.houseNumber}
           </p>
         </div>
         
         <Dialog open={isNewPaymentDialogOpen} onOpenChange={setIsNewPaymentDialogOpen}>
           <DialogTrigger asChild>
-            <Button size={'lg'}>
+            <Button size={'lg'} className="w-full md:w-auto">
               <Plus className="h-4 w-4 mr-2" />
-              Bayar Iuran
+              <span className="hidden sm:inline">Bayar Iuran</span>
+              <span className="sm:hidden">Bayar</span>
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -335,35 +337,35 @@ export default function PaymentPage() {
 
               {/* Total Amount Display */}
               {newPaymentForm.months.length > 0 && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex justify-between items-center">
+                <div className="p-3 md:p-4 bg-muted/50 border rounded-lg">
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-center space-y-2 md:space-y-0">
                     <div>
-                      <p className="text-sm font-medium text-blue-800">
+                      <p className="text-sm font-medium">
                         Total yang harus dibayar:
                       </p>
-                      <p className="text-xs text-blue-600 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {newPaymentForm.months.length} bulan × Rp {(settings?.monthly_fee?.amount || 150000).toLocaleString('id-ID')}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-blue-800">
+                    <div className="text-left md:text-right">
+                      <p className="text-lg md:text-xl font-bold">
                         Rp {((settings?.monthly_fee?.amount || 150000) * newPaymentForm.months.length).toLocaleString('id-ID')}
                       </p>
                     </div>
                   </div>
-                  <div className="mt-3 pt-3 border-t border-blue-200">
-                    <p className="text-xs text-blue-600">
+                  <div className="mt-3 pt-3 border-t">
+                    <p className="text-xs text-muted-foreground">
                       Bulan yang dipilih: {newPaymentForm.months.map(m => MONTHS[parseInt(m) - 1]).join(', ')}
                     </p>
                   </div>
                 </div>
               )}
 
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsNewPaymentDialogOpen(false)}>
+              <div className="flex flex-col space-y-2 md:flex-row md:justify-end md:space-y-0 md:space-x-2">
+                <Button variant="outline" onClick={() => setIsNewPaymentDialogOpen(false)} className="w-full md:w-auto">
                   Batal
                 </Button>
-                <Button onClick={createNewPayment}>
+                <Button onClick={createNewPayment} className="w-full md:w-auto">
                   Bayar
                 </Button>
               </div>
@@ -381,16 +383,16 @@ export default function PaymentPage() {
 
       {/* Monthly Payment Status */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center">
-              <CheckCircle className="h-5 w-5 mr-2 text-blue-600" />
+        <CardHeader className="pb-4">
+          <div className="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0">
+            <CardTitle className="flex items-center text-lg">
+              <CheckCircle className="h-5 w-5 mr-2" />
               Status Pembayaran Iuran
             </CardTitle>
             <div className="flex items-center space-x-2">
               <Label htmlFor="yearFilter" className="text-sm font-medium">Tahun:</Label>
               <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                <SelectTrigger className="w-24">
+                <SelectTrigger className="w-20 md:w-24">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -411,22 +413,22 @@ export default function PaymentPage() {
             </div>
           ) : (
             <>
-              <div className="grid gap-4 grid-cols-4 md:grid-cols-6">
+              <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
                 {monthlyStatus.map((status) => (
                   <div
                     key={status.monthNumber}
-                    className={`p-4 rounded-lg border-2 transition-colors ${
+                    className={`p-3 rounded-lg border-2 transition-colors ${
                       status.isPaid
                         ? 'border-green-200 bg-green-50'
                         : 'border-gray-200 bg-gray-50'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-0">
+                    <div className="flex items-center justify-between mb-1">
                       <h4 className="font-semibold text-sm">{status.month}</h4>
                       {status.isPaid ? (
-                        <CheckCircle className="h-5 w-5 text-green-600" />
+                        <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
                       ) : (
-                        <Clock className="h-5 w-5 text-gray-400" />
+                        <Clock className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
                       )}
                     </div>
                     <div className={`text-xs ${status.isPaid ? 'text-green-700' : 'text-gray-500'}`}>
@@ -442,14 +444,14 @@ export default function PaymentPage() {
                 ))}
               </div>
               
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                <div className="flex items-center text-sm text-blue-700">
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center text-sm">
                   <CheckCircle className="h-4 w-4 mr-2" />
                   <span className="font-medium">
                     {monthlyStatus.filter(s => s.isPaid).length} dari {MONTHS.length} bulan telah dibayar
                   </span>
                 </div>
-                <p className="text-xs text-blue-600 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Total dibayar: Rp {monthlyStatus.reduce((sum, s) => sum + s.amount, 0).toLocaleString('id-ID')}
                 </p>
               </div>
@@ -461,31 +463,32 @@ export default function PaymentPage() {
       {/* Pending Payments */}
       {pendingPayments.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center text-lg">
               <Clock className="h-5 w-5 mr-2 text-orange-600" />
               Tagihan Belum Dibayar
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {pendingPayments.map((payment) => (
                 <div
                   key={payment.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0 p-3 md:p-4 border rounded-lg"
                 >
-                  <div>
+                  <div className="flex-1">
                     <h4 className="font-semibold">{payment.description}</h4>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground mt-1">
                       Jatuh tempo: {format(payment.paymentDate, 'dd MMM yyyy', { locale: id })}
                     </p>
-                    <p className="text-lg font-bold text-orange-600">
+                    <p className="text-lg font-bold text-orange-600 mt-1">
                       Rp {payment.amount.toLocaleString('id-ID')}
                     </p>
                   </div>
-                  <Button onClick={() => handlePayment(payment)}>
+                  <Button onClick={() => handlePayment(payment)} className="w-full md:w-auto">
                     <CreditCard className="h-4 w-4 mr-2" />
-                    Bayar Sekarang
+                    <span className="hidden sm:inline">Bayar Sekarang</span>
+                    <span className="sm:hidden">Bayar</span>
                   </Button>
                 </div>
               ))}
@@ -496,8 +499,8 @@ export default function PaymentPage() {
 
       {/* Payment History */}
       <Card>
-        <CardHeader>
-          <CardTitle>Riwayat Pembayaran</CardTitle>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Riwayat Pembayaran</CardTitle>
         </CardHeader>
         <CardContent>
           {userPayments.length === 0 ? (
@@ -505,53 +508,80 @@ export default function PaymentPage() {
               Belum ada riwayat pembayaran
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tanggal</TableHead>
-                  <TableHead>Keterangan</TableHead>
-                  <TableHead>Nominal</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile Card Layout */}
+              <div className="block md:hidden space-y-3">
                 {userPayments
                   .sort((a, b) => b.paymentDate.getTime() - a.paymentDate.getTime())
                   .map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell>
-                        {format(payment.paymentDate, 'dd MMM yyyy', { locale: id })}
-                      </TableCell>
-                      <TableCell>{payment.description}</TableCell>
-                      <TableCell>Rp {payment.amount.toLocaleString('id-ID')}</TableCell>
-                      <TableCell>
+                    <div key={payment.id} className="p-3 border rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-medium">{payment.description}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(payment.paymentDate, 'dd MMM yyyy', { locale: id })}
+                          </p>
+                        </div>
                         <Badge variant={payment.status === 'paid' ? 'default' : 'destructive'}>
                           {payment.status === 'paid' ? 'Lunas' : 'Belum Dibayar'}
                         </Badge>
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                      <p className="text-lg font-bold">Rp {payment.amount.toLocaleString('id-ID')}</p>
+                    </div>
                   ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Desktop Table Layout */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tanggal</TableHead>
+                      <TableHead>Keterangan</TableHead>
+                      <TableHead>Nominal</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {userPayments
+                      .sort((a, b) => b.paymentDate.getTime() - a.paymentDate.getTime())
+                      .map((payment) => (
+                        <TableRow key={payment.id}>
+                          <TableCell>
+                            {format(payment.paymentDate, 'dd MMM yyyy', { locale: id })}
+                          </TableCell>
+                          <TableCell>{payment.description}</TableCell>
+                          <TableCell>Rp {payment.amount.toLocaleString('id-ID')}</TableCell>
+                          <TableCell>
+                            <Badge variant={payment.status === 'paid' ? 'default' : 'destructive'}>
+                              {payment.status === 'paid' ? 'Lunas' : 'Belum Dibayar'}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
 
       {/* Enhanced Payment Dialog */}
       <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl mx-4">
           <DialogHeader>
-            <DialogTitle className="flex items-center">
+            <DialogTitle className="flex items-center text-lg">
               <CreditCard className="h-5 w-5 mr-2" />
               Proses Pembayaran
             </DialogTitle>
           </DialogHeader>
           {payingPayment && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Payment Summary */}
-              <div className="p-4 border rounded-lg bg-muted">
+              <div className="p-3 md:p-4 border rounded-lg bg-muted/50">
                 <h4 className="font-semibold mb-2">{payingPayment.description}</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Rumah:</p>
                     <p className="font-medium">{payingPayment.houseBlock}</p>
@@ -564,7 +594,7 @@ export default function PaymentPage() {
                   </div>
                 </div>
                 <div className="mt-3 pt-3 border-t">
-                  <p className="text-2xl font-bold text-green-600">
+                  <p className="text-xl md:text-2xl font-bold text-green-600">
                     Rp {payingPayment.amount.toLocaleString('id-ID')}
                   </p>
                 </div>
@@ -604,40 +634,43 @@ export default function PaymentPage() {
               {/* Payment Details Form */}
               {paymentForm.paymentMethod === 'bank_transfer' && (
                 <div className="space-y-4">
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm font-medium text-blue-800">Informasi Rekening Tujuan:</p>
-                    <p className="text-sm text-blue-700 mt-1">
+                  <div className="p-3 bg-muted/50 border rounded-lg">
+                    <p className="text-sm font-medium">Informasi Rekening Tujuan:</p>
+                    <p className="text-sm text-muted-foreground mt-1">
                       Bank BCA: 1234567890 a.n. Pengurus Perumahan<br />
                       Bank Mandiri: 0987654321 a.n. Pengurus Perumahan
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="accountNumber">Nomor Rekening Pengirim</Label>
+                      <Label htmlFor="accountNumber" className="text-sm font-medium">Nomor Rekening Pengirim</Label>
                       <Input
                         id="accountNumber"
                         value={paymentForm.accountNumber}
                         onChange={(e) => setPaymentForm({ ...paymentForm, accountNumber: e.target.value })}
                         placeholder="1234567890"
+                        className="mt-1"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="accountName">Nama Pemilik Rekening</Label>
+                      <Label htmlFor="accountName" className="text-sm font-medium">Nama Pemilik Rekening</Label>
                       <Input
                         id="accountName"
                         value={paymentForm.accountName}
                         onChange={(e) => setPaymentForm({ ...paymentForm, accountName: e.target.value })}
                         placeholder="Nama sesuai KTP"
+                        className="mt-1"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="transactionId">ID Transaksi / Nomor Referensi</Label>
+                    <Label htmlFor="transactionId" className="text-sm font-medium">ID Transaksi / Nomor Referensi</Label>
                     <Input
                       id="transactionId"
                       value={paymentForm.transactionId}
                       onChange={(e) => setPaymentForm({ ...paymentForm, transactionId: e.target.value })}
                       placeholder="TXN123456789 (opsional)"
+                      className="mt-1"
                     />
                   </div>
                 </div>
@@ -645,38 +678,40 @@ export default function PaymentPage() {
 
               {paymentForm.paymentMethod === 'e_wallet' && (
                 <div className="space-y-4">
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm font-medium text-green-800">Scan QR Code atau Transfer ke:</p>
-                    <p className="text-sm text-green-700 mt-1">
+                  <div className="p-3 bg-muted/50 border rounded-lg">
+                    <p className="text-sm font-medium">Scan QR Code atau Transfer ke:</p>
+                    <p className="text-sm text-muted-foreground mt-1">
                       OVO/GoPay/Dana: 081234567890<br />
                       a.n. Pengurus Perumahan
                     </p>
                   </div>
                   <div>
-                    <Label htmlFor="ewalletNumber">Nomor E-Wallet Pengirim</Label>
+                    <Label htmlFor="ewalletNumber" className="text-sm font-medium">Nomor E-Wallet Pengirim</Label>
                     <Input
                       id="ewalletNumber"
                       value={paymentForm.accountNumber}
                       onChange={(e) => setPaymentForm({ ...paymentForm, accountNumber: e.target.value })}
                       placeholder="081234567890"
+                      className="mt-1"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="transactionId">ID Transaksi</Label>
+                    <Label htmlFor="transactionId" className="text-sm font-medium">ID Transaksi</Label>
                     <Input
                       id="transactionId"
                       value={paymentForm.transactionId}
                       onChange={(e) => setPaymentForm({ ...paymentForm, transactionId: e.target.value })}
                       placeholder="TXN123456789 (opsional)"
+                      className="mt-1"
                     />
                   </div>
                 </div>
               )}
 
               {paymentForm.paymentMethod === 'cash' && (
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm font-medium text-yellow-800">Pembayaran Tunai:</p>
-                  <p className="text-sm text-yellow-700 mt-1">
+                <div className="p-3 bg-muted/50 border rounded-lg">
+                  <p className="text-sm font-medium">Pembayaran Tunai:</p>
+                  <p className="text-sm text-muted-foreground mt-1">
                     Silakan datang ke kantor pengelola perumahan pada:<br />
                     <strong>Senin-Jumat: 08:00-16:00 WIB</strong><br />
                     <strong>Sabtu: 08:00-12:00 WIB</strong>
@@ -687,7 +722,7 @@ export default function PaymentPage() {
               {/* Upload Proof */}
               {paymentForm.paymentMethod !== 'cash' && (
                 <div>
-                  <Label htmlFor="proof">Upload Bukti Pembayaran</Label>
+                  <Label htmlFor="proof" className="text-sm font-medium">Upload Bukti Pembayaran</Label>
                   <Input
                     id="proof"
                     type="file"
@@ -709,24 +744,30 @@ export default function PaymentPage() {
 
               {/* Notes */}
               <div>
-                <Label htmlFor="notes">Catatan Tambahan (Opsional)</Label>
+                <Label htmlFor="notes" className="text-sm font-medium">Catatan Tambahan (Opsional)</Label>
                 <Textarea
                   id="notes"
                   value={paymentForm.notes}
                   onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
                   placeholder="Tambahkan catatan jika diperlukan..."
                   rows={3}
+                  className="mt-1"
                 />
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsPaymentDialogOpen(false)}>
+              <div className="flex flex-col space-y-2 md:flex-row md:justify-end md:space-y-0 md:space-x-2">
+                <Button variant="outline" onClick={() => setIsPaymentDialogOpen(false)} className="w-full md:w-auto">
                   Batal
                 </Button>
-                <Button onClick={processPayment}>
+                <Button onClick={processPayment} className="w-full md:w-auto">
                   <Upload className="h-4 w-4 mr-2" />
-                  {paymentForm.paymentMethod === 'cash' ? 'Konfirmasi Pembayaran' : 'Kirim Bukti Pembayaran'}
+                  <span className="hidden sm:inline">
+                    {paymentForm.paymentMethod === 'cash' ? 'Konfirmasi Pembayaran' : 'Kirim Bukti Pembayaran'}
+                  </span>
+                  <span className="sm:hidden">
+                    {paymentForm.paymentMethod === 'cash' ? 'Konfirmasi' : 'Kirim'}
+                  </span>
                 </Button>
               </div>
 

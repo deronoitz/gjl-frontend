@@ -46,9 +46,13 @@ export async function POST(request: NextRequest) {
       created_by: currentUser.id,
     }));
 
+    // Use upsert to handle existing records (ON CONFLICT DO NOTHING)
     const { data, error } = await supabaseService
       .from('payment_records')
-      .insert(insertData)
+      .upsert(insertData, { 
+        onConflict: 'user_uuid,bulan,tahun',
+        ignoreDuplicates: true 
+      })
       .select(`
         id,
         user_uuid,
@@ -64,9 +68,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create payment status records' }, { status: 500 });
     }
 
+    const createdCount = data?.length || 0;
+    const requestedCount = user_uuids.length;
+    const alreadyExistsCount = requestedCount - createdCount;
+
+    let message = `Successfully processed ${requestedCount} payment records`;
+    if (createdCount > 0) {
+      message += ` (${createdCount} created`;
+      if (alreadyExistsCount > 0) {
+        message += `, ${alreadyExistsCount} already existed)`;
+      } else {
+        message += `)`;
+      }
+    } else if (alreadyExistsCount > 0) {
+      message += ` (all ${alreadyExistsCount} already existed)`;
+    }
+
     return NextResponse.json({ 
       data, 
-      message: `Successfully created ${data.length} payment status records` 
+      message,
+      stats: {
+        requested: requestedCount,
+        created: createdCount,
+        alreadyExists: alreadyExistsCount
+      }
     }, { status: 201 });
 
   } catch (error) {

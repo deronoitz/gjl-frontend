@@ -124,7 +124,7 @@ export const usePaymentStatus = () => {
 
       // Refresh data after successful creation
       await fetchPaymentStatus();
-      return result.data;
+      return result; // Return full result including stats
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       throw err;

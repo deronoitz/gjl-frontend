@@ -22,8 +22,6 @@ export async function GET(request: NextRequest) {
   try {
     const currentUser = await getCurrentUser(request);
     
-    console.log('Current user in payment-status API:', currentUser);
-    
     if (!currentUser) {
       console.log('No current user found, returning unauthorized');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

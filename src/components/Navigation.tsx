@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Home, LogOut, DollarSign, CreditCard, Camera, Users, Megaphone, Settings, Lock, Menu, X } from 'lucide-react';
+import { Home, LogOut, DollarSign, CreditCard, Camera, Users, Megaphone, Settings, Lock, Menu, X, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -14,19 +14,31 @@ import ChangePasswordDialog from '@/components/ChangePasswordDialog';
 
 const navigationItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Keuangan', href: '/finance', icon: DollarSign },
-  { name: 'Pembayaran', href: '/payment', icon: CreditCard },
+  { 
+    name: 'Keuangan', 
+    icon: DollarSign,
+    subItems: [
+      { name: 'Laporan Keuangan', href: '/finance', icon: DollarSign },
+      { name: 'Pembayaran', href: '/payment', icon: CreditCard },
+    ]
+  },
   { name: 'Galeri', href: '/gallery', icon: Camera },
 ];
 
 const adminNavItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Keuangan', href: '/finance', icon: DollarSign },
-  { name: 'Pembayaran', href: '/payment', icon: CreditCard },
+  { 
+    name: 'Keuangan', 
+    icon: DollarSign,
+    subItems: [
+      { name: 'Laporan Keuangan', href: '/finance', icon: DollarSign },
+      { name: 'Pembayaran', href: '/payment', icon: CreditCard },
+      { name: 'Laporan Iuran', href: '/admin/payment-report', icon: CreditCard },
+    ]
+  },
   { name: 'Galeri', href: '/gallery', icon: Camera },
   { name: 'Warga', href: '/admin/users', icon: Users },
-  { name: 'Pengumuman', href: '/admin/announcements', icon: Megaphone },
-  { name: 'Settings', href: '/admin/settings', icon: Settings }
+  { name: 'Pengumuman', href: '/admin/announcements', icon: Megaphone }
 ];
 
 export default function Navigation() {
@@ -34,6 +46,7 @@ export default function Navigation() {
   const pathname = usePathname();
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileDropdowns, setMobileDropdowns] = useState<{[key: string]: boolean}>({});
 
   const handleLogout = async () => {
     try {
@@ -43,6 +56,18 @@ export default function Navigation() {
     } catch (error) {
       console.error('Logout error:', error);
     }
+  };
+
+  const toggleMobileDropdown = (itemName: string) => {
+    setMobileDropdowns(prev => ({
+      ...prev,
+      [itemName]: !prev[itemName]
+    }));
+  };
+
+  const isActiveParent = (subItems?: Array<{href: string}>) => {
+    if (!subItems) return false;
+    return subItems.some(subItem => pathname === subItem.href);
   };
 
   if (!user) return null;
@@ -62,19 +87,60 @@ export default function Navigation() {
               
               {/* Desktop Navigation */}
               <div className="hidden md:flex space-x-4">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`px-3 py-2 rounded-md text-sm font-medium ${
-                      pathname === item.href
-                        ? 'bg-emerald-100 text-emerald-900'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
+                {navItems.map((item) => {
+                  if (item.subItems) {
+                    // Render dropdown for items with sub-items
+                    return (
+                      <DropdownMenu key={item.name}>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            className={`px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1 ${
+                              isActiveParent(item.subItems)
+                                ? 'bg-emerald-100 text-emerald-900'
+                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span>{item.name}</span>
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          {item.subItems.map((subItem) => (
+                            <DropdownMenuItem key={subItem.href} asChild>
+                              <Link
+                                href={subItem.href}
+                                className={`flex items-center space-x-2 ${
+                                  pathname === subItem.href 
+                                    ? 'bg-emerald-50 text-emerald-900' 
+                                    : ''
+                                }`}
+                              >
+                                <subItem.icon className="h-4 w-4" />
+                                <span>{subItem.name}</span>
+                              </Link>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    );
+                  } else {
+                    // Render regular link for items without sub-items
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href!}
+                        className={`px-3 py-2 rounded-md text-sm font-medium ${
+                          pathname === item.href
+                            ? 'bg-emerald-100 text-emerald-900'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                        }`}
+                      >
+                        {item.name}
+                      </Link>
+                    );
+                  }
+                })}
               </div>
             </div>
 
@@ -121,6 +187,14 @@ export default function Navigation() {
                       <Lock className="mr-2 h-4 w-4" />
                       <span>Ganti Password</span>
                     </DropdownMenuItem>
+                    {isAdmin && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin/settings">
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>Settings</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />
@@ -160,21 +234,71 @@ export default function Navigation() {
                 <div className="space-y-1">
                   {navItems.map((item) => {
                     const Icon = item.icon;
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`flex items-center px-3 py-3 rounded-md text-sm font-medium transition-colors ${
-                          pathname === item.href
-                            ? 'bg-emerald-100 text-emerald-900 border-l-4 border-emerald-500'
-                            : 'text-gray-700 hover:text-gray-900 hover:bg-white'
-                        }`}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <Icon className="mr-3 h-5 w-5" />
-                        {item.name}
-                      </Link>
-                    );
+                    
+                    if (item.subItems) {
+                      // Render dropdown for items with sub-items
+                      return (
+                        <div key={item.name}>
+                          <button
+                            onClick={() => toggleMobileDropdown(item.name)}
+                            className={`flex items-center justify-between w-full px-3 py-3 rounded-md text-sm font-medium transition-colors ${
+                              isActiveParent(item.subItems)
+                                ? 'bg-emerald-100 text-emerald-900 border-l-4 border-emerald-500'
+                                : 'text-gray-700 hover:text-gray-900 hover:bg-white'
+                            }`}
+                          >
+                            <div className="flex items-center">
+                              <Icon className="mr-3 h-5 w-5" />
+                              {item.name}
+                            </div>
+                            {mobileDropdowns[item.name] ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </button>
+                          {mobileDropdowns[item.name] && (
+                            <div className="ml-6 mt-1 space-y-1">
+                              {item.subItems.map((subItem) => {
+                                const SubIcon = subItem.icon;
+                                return (
+                                  <Link
+                                    key={subItem.href}
+                                    href={subItem.href}
+                                    className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                      pathname === subItem.href
+                                        ? 'bg-emerald-100 text-emerald-900 border-l-4 border-emerald-500'
+                                        : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                                    }`}
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                  >
+                                    <SubIcon className="mr-3 h-4 w-4" />
+                                    {subItem.name}
+                                  </Link>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    } else {
+                      // Render regular link for items without sub-items
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href!}
+                          className={`flex items-center px-3 py-3 rounded-md text-sm font-medium transition-colors ${
+                            pathname === item.href
+                              ? 'bg-emerald-100 text-emerald-900 border-l-4 border-emerald-500'
+                              : 'text-gray-700 hover:text-gray-900 hover:bg-white'
+                          }`}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <Icon className="mr-3 h-5 w-5" />
+                          {item.name}
+                        </Link>
+                      );
+                    }
                   })}
                 </div>
 
@@ -190,6 +314,16 @@ export default function Navigation() {
                     <Lock className="mr-3 h-5 w-5" />
                     Ganti Password
                   </button>
+                  {isAdmin && (
+                    <Link
+                      href="/admin/settings"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center w-full px-3 py-3 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-white transition-colors"
+                    >
+                      <Settings className="mr-3 h-5 w-5" />
+                      Settings
+                    </Link>
+                  )}
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);

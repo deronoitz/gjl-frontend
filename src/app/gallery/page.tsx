@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Calendar, Image as ImageIcon, Edit, Trash2, Upload, ExternalLink, FolderOpen, Loader2 } from 'lucide-react';
+import { Plus, Calendar, Image as ImageIcon, Edit, Trash2, Upload, ExternalLink, FolderOpen, Loader2, Play } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import Image from 'next/image';
@@ -173,142 +173,153 @@ export default function GalleryPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Galeri Album</h1>
-          <p className="text-muted-foreground">
-            Kumpulan album foto kegiatan dan momen di perumahan
-          </p>
-        </div>
-        
-        {isAdmin && (
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetDialog();
-          }}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Tambah Album
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {editingAlbum ? 'Edit Album' : 'Tambah Album Baru'}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="title">Judul Album</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Contoh: Kegiatan Gotong Royong September 2024"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="coverImage">Gambar Cover</Label>
-                  <Input
-                    id="coverImage"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="cursor-pointer"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Upload gambar untuk cover album (JPG, PNG, GIF, maksimal 5MB)
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="driveUrl">URL Google Drive</Label>
-                  <Input
-                    id="driveUrl"
-                    type="url"
-                    value={formData.driveUrl}
-                    onChange={(e) => setFormData({ ...formData, driveUrl: e.target.value })}
-                    placeholder="https://drive.google.com/drive/folders/..."
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Link folder Google Drive yang berisi foto-foto album
-                  </p>
-                </div>
-
-                {coverImagePreview && (
-                  <div className="border rounded-lg p-2">
-                    <p className="text-xs text-muted-foreground mb-2">Preview Cover:</p>
-                    <div className="aspect-video relative bg-gray-100 rounded overflow-hidden">
-                      <Image
-                        src={coverImagePreview}
-                        alt="Preview"
-                        fill
-                        className="object-cover"
-                        onError={() => setMessage('Gambar cover tidak dapat dimuat.')}
-                      />
-                    </div>
+    <div className="space-y-4 md:space-y-6">
+      {/* Mobile-Optimized Header */}
+      <div className="space-y-3">
+        <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
+          <div className="space-y-1">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
+              Galeri Album
+            </h1>
+            <p className="text-sm md:text-base text-muted-foreground">
+              Kumpulan album foto kegiatan dan momen di perumahan
+            </p>
+          </div>
+          
+          {isAdmin && (
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetDialog();
+            }}>
+              <DialogTrigger asChild>
+                <Button className="w-full md:w-auto">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Tambah Album
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="mx-2 md:mx-0 w-[calc(100vw-1rem)] md:w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-lg md:text-xl">
+                    {editingAlbum ? 'Edit Album' : 'Tambah Album Baru'}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="title" className="text-sm font-medium">Judul Album</Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="Contoh: Kegiatan Gotong Royong September 2024"
+                      className="h-11"
+                    />
                   </div>
-                )}
-                
-                {message && (
-                  <Alert>
-                    <AlertDescription>{message}</AlertDescription>
-                  </Alert>
-                )}
-                
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Batal
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        {editingAlbum ? 'Mengupdate...' : 'Menambahkan...'}
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4 mr-2" />
-                        {editingAlbum ? 'Update' : 'Tambah'}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        )}
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="coverImage" className="text-sm font-medium">Gambar Cover</Label>
+                    <Input
+                      id="coverImage"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="cursor-pointer h-11 file:mr-3 file:px-3 file:py-2 file:rounded-md file:border-0 file:text-sm file:bg-primary file:text-primary-foreground file:hover:bg-primary/90"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Upload gambar untuk cover album (JPG, PNG, GIF, maksimal 5MB)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="driveUrl" className="text-sm font-medium">URL Google Drive</Label>
+                    <Input
+                      id="driveUrl"
+                      type="url"
+                      value={formData.driveUrl}
+                      onChange={(e) => setFormData({ ...formData, driveUrl: e.target.value })}
+                      placeholder="https://drive.google.com/drive/folders/..."
+                      className="h-11"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Link folder Google Drive yang berisi foto-foto album
+                    </p>
+                  </div>
+
+                  {coverImagePreview && (
+                    <div className="border rounded-lg p-3 bg-gray-50">
+                      <p className="text-xs font-medium text-gray-700 mb-2">Preview Cover:</p>
+                      <div className="aspect-video relative bg-gray-100 rounded overflow-hidden">
+                        <Image
+                          src={coverImagePreview}
+                          alt="Preview"
+                          fill
+                          className="object-cover"
+                          onError={() => setMessage('Gambar cover tidak dapat dimuat.')}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {message && (
+                    <Alert>
+                      <AlertDescription className="text-sm">{message}</AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  <div className="flex flex-col-reverse md:flex-row justify-end space-y-2 space-y-reverse md:space-y-0 md:space-x-2 pt-2">
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="h-11">
+                      Batal
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting} className="h-11">
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          {editingAlbum ? 'Mengupdate...' : 'Menambahkan...'}
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-2" />
+                          {editingAlbum ? 'Update' : 'Tambah'}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
       </div>
 
       {(message || apiError) && (
         <Alert>
           <ImageIcon className="h-4 w-4" />
-          <AlertDescription>{message || apiError}</AlertDescription>
+          <AlertDescription className="text-sm">{message || apiError}</AlertDescription>
         </Alert>
       )}
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Memuat album...</span>
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-500" />
+            <span className="block mt-2 text-sm text-muted-foreground">Memuat album...</span>
+          </div>
         </div>
       ) : albums.length === 0 ? (
-        <Card>
+        <Card className="border-dashed border-2 border-gray-200">
           <CardContent className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold">Belum ada album</h3>
-              <p className="text-muted-foreground mb-4">
+            <div className="text-center max-w-sm">
+              <div className="bg-gray-100 rounded-full p-3 w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <FolderOpen className="h-8 w-8 text-gray-500" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Belum ada album</h3>
+              <p className="text-sm text-muted-foreground mb-4">
                 {isAdmin 
                   ? 'Mulai dengan menambahkan album foto pertama' 
                   : 'Galeri masih kosong, tunggu admin mengunggah album foto kegiatan'
                 }
               </p>
               {isAdmin && (
-                <Button onClick={() => setIsDialogOpen(true)}>
+                <Button onClick={() => setIsDialogOpen(true)} className="w-full md:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Tambah Album
                 </Button>
@@ -317,89 +328,133 @@ export default function GalleryPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {albums.map((album) => (
-            <Card key={album.id} className="overflow-hidden">
-              <div className="aspect-video relative bg-gray-100">
-                <Image
-                  src={album.coverImageUrl}
-                  alt={album.title}
-                  fill
-                  className="object-cover"
-                  onError={(e) => {
-                    // Show placeholder if image fails to load
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
-                />
-              </div>
-              <CardHeader className="pb-2">
-                <div className="space-y-2">
-                  <CardTitle className="text-lg leading-tight">{album.title}</CardTitle>
-                  <Badge variant="outline" className="text-xs w-fit">
-                    <Calendar className="h-3 w-3 mr-1" />
-                    {format(album.createdAt, 'dd MMM yyyy', { locale: id })}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="flex items-center justify-between">
-                  <Button
-                    size="sm"
-                    onClick={() => window.open(album.driveUrl, '_blank')}
-                    className="flex-1 mr-2"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Lihat Album
-                  </Button>
-                  {isAdmin && (
-                    <div className="flex space-x-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(album)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(album.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+        <>
+          {/* Album Count */}
+          <div className="text-sm text-muted-foreground">
+            Menampilkan {albums.length} album
+          </div>
+          
+          {/* Mobile-Optimized Grid */}
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {albums.map((album) => (
+              <Card key={album.id} className="overflow-hidden hover:shadow-lg transition-all duration-200 group">
+                <div className="aspect-video relative bg-gray-100 overflow-hidden">
+                  <Image
+                    src={album.coverImageUrl}
+                    alt={album.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      // Show placeholder if image fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
+                  />
+                  {/* Play overlay for better UX */}
+                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                    <div className="bg-white/90 rounded-full p-2">
+                      <Play className="h-5 w-5 text-gray-700 fill-current" />
                     </div>
-                  )}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                
+                <CardHeader className="pb-2 px-4 pt-4">
+                  <div className="space-y-2">
+                    <CardTitle className="text-base md:text-lg leading-tight line-clamp-2">
+                      {album.title}
+                    </CardTitle>
+                    <Badge variant="outline" className="text-xs w-fit">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {format(album.createdAt, 'dd MMM yyyy', { locale: id })}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="pt-0 px-4 pb-4">
+                  <div className="space-y-2">
+                    <Button
+                      size="sm"
+                      onClick={() => window.open(album.driveUrl, '_blank')}
+                      className="w-full h-9"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Lihat Album
+                    </Button>
+                    
+                    {isAdmin && (
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(album)}
+                          className="flex-1 h-9"
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(album.id)}
+                          className="flex-1 h-9 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Hapus
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
       )}
 
-      {/* Info Section */}
+      {/* Mobile-Optimized Info Section */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Informasi</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base md:text-lg flex items-center gap-2">
+            <ImageIcon className="h-5 w-5 text-gray-600" />
+            Informasi
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <div className="space-y-2 text-sm text-muted-foreground">
             {isAdmin ? (
-              <>
-                <p>• Klik &quot;Tambah Album&quot; untuk membuat album foto baru</p>
-                <p>• Upload gambar cover dari perangkat Anda (maksimal 5MB)</p>
-                <p>• Upload foto-foto ke Google Drive dan bagikan folder dengan akses publik</p>
-                <p>• Pastikan URL Google Drive dapat diakses oleh semua orang</p>
-                <p>• Gunakan gambar cover yang menarik untuk setiap album</p>
-                <p>• Berikan judul yang deskriptif untuk setiap album</p>
-              </>
+              <div className="grid gap-2">
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></div>
+                  <span>Klik &quot;Tambah Album&quot; untuk membuat album foto baru</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></div>
+                  <span>Upload gambar cover dari perangkat Anda (maksimal 5MB)</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></div>
+                  <span>Upload foto-foto ke Google Drive dan bagikan folder dengan akses publik</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></div>
+                  <span>Pastikan URL Google Drive dapat diakses oleh semua orang</span>
+                </div>
+              </div>
             ) : (
-              <>
-                <p>• Album-album foto diunggah oleh admin perumahan</p>
-                <p>• Klik &quot;Lihat Album&quot; untuk membuka folder Google Drive</p>
-                <p>• Di Google Drive, Anda dapat melihat dan mendownload foto-foto</p>
-                <p>• Album terbaru akan muncul di bagian atas</p>
-              </>
+              <div className="grid gap-2">
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></div>
+                  <span>Album-album foto diunggah oleh admin perumahan</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></div>
+                  <span>Klik &quot;Lihat Album&quot; untuk membuka folder Google Drive</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></div>
+                  <span>Di Google Drive, Anda dapat melihat dan mendownload foto-foto</span>
+                </div>
+              </div>
             )}
           </div>
         </CardContent>

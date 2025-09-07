@@ -99,27 +99,30 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      {/* Mobile Header */}
+      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Pengaturan Aplikasi</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Pengaturan Aplikasi</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">
             Kelola pengaturan umum aplikasi perumahan
           </p>
         </div>
         
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={handleReset} disabled={isSaving}>
+        <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2">
+          <Button variant="outline" onClick={handleReset} disabled={isSaving} className="w-full md:w-auto">
             <RotateCcw className="h-4 w-4 mr-2" />
-            Reset Default
+            <span className="hidden sm:inline">Reset Default</span>
+            <span className="sm:hidden">Reset</span>
           </Button>
-          <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
+          <Button onClick={handleSave} disabled={!hasChanges || isSaving} className="w-full md:w-auto">
             {isSaving ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}
-            {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
+            <span className="hidden sm:inline">{isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
+            <span className="sm:hidden">{isSaving ? 'Simpan...' : 'Simpan'}</span>
           </Button>
         </div>
       </div>
@@ -150,33 +153,37 @@ export default function AdminSettingsPage() {
 
       {/* Fee Settings */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center text-lg">
             <DollarSign className="h-5 w-5 mr-2" />
             Pengaturan Biaya
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <Label htmlFor="monthlyFee">Iuran Bulanan (Rp)</Label>
-              <Input
-                id="monthlyFee"
-                value={formatCurrency(localSettings.amount.toString())}
-                onChange={(e) => handleCurrencyChange(e.target.value)}
-                placeholder="150000"
-                disabled={isSaving}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Biaya iuran wajib per bulan untuk semua warga
-              </p>
-            </div>
-            <div className="flex flex-col justify-end">
-              <div className="text-sm text-muted-foreground">
-                <strong>Nilai saat ini:</strong> Rp {formatCurrency(settings.monthly_fee.amount.toString())}
+          <div className="grid gap-4">
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="monthlyFee" className="text-sm font-medium">Iuran Bulanan (Rp)</Label>
+                <Input
+                  id="monthlyFee"
+                  value={formatCurrency(localSettings.amount.toString())}
+                  onChange={(e) => handleCurrencyChange(e.target.value)}
+                  placeholder="150000"
+                  disabled={isSaving}
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Biaya iuran wajib per bulan untuk semua warga
+                </p>
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                Terakhir diperbarui dari database
+              
+              <div className="bg-muted/50 rounded-lg p-3">
+                <div className="text-sm text-foreground">
+                  <strong>Nilai saat ini:</strong> Rp {formatCurrency(settings.monthly_fee.amount.toString())}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Terakhir diperbarui dari database
+                </div>
               </div>
             </div>
           </div>

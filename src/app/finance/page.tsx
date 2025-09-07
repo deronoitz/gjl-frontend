@@ -48,12 +48,6 @@ const YEARS = [
   { value: '2025', label: '2025' },
 ];
 
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'Semua Status' },
-  { value: 'paid', label: 'Lunas' },
-  { value: 'pending', label: 'Tertunda' },
-];
-
 const TYPE_OPTIONS = [
   { value: 'all', label: 'Semua Tipe' },
   { value: 'income', label: 'Pemasukan' },
@@ -83,7 +77,6 @@ export default function FinancePage() {
   const { user } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedYear, setSelectedYear] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   const [sortColumn, setSortColumn] = useState<keyof Payment | ''>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -152,11 +145,6 @@ export default function FinancePage() {
       );
     }
 
-    // Filter by status
-    if (selectedStatus !== 'all') {
-      filtered = filtered.filter(payment => payment.status === selectedStatus);
-    }
-
     // Filter by type
     if (selectedType !== 'all') {
       filtered = filtered.filter(payment => payment.type === selectedType);
@@ -175,7 +163,7 @@ export default function FinancePage() {
     }
 
     return filtered;
-  }, [allTransactions, selectedMonth, selectedYear, selectedStatus, selectedType, sortColumn, sortDirection]);
+  }, [allTransactions, selectedMonth, selectedYear, selectedType, sortColumn, sortDirection]);
 
   // Handle functions for manual input
   const handleSubmit = (e: React.FormEvent) => {
@@ -256,24 +244,13 @@ export default function FinancePage() {
   const totalExpense = filteredAndSortedPayments
     .filter(p => p.type === 'expense' && p.status === 'paid')
     .reduce((sum, p) => sum + p.amount, 0);
-  
-  const totalPaid = filteredAndSortedPayments
-    .filter(p => p.status === 'paid')
-    .reduce((sum, p) => sum + p.amount, 0);
-  
-  const totalPending = filteredAndSortedPayments
-    .filter(p => p.status === 'pending')
-    .reduce((sum, p) => sum + p.amount, 0);
-
-  const paidCount = filteredAndSortedPayments.filter(p => p.status === 'paid').length;
-  const pendingCount = filteredAndSortedPayments.filter(p => p.status === 'pending').length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Laporan Keuangan</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Laporan Keuangan</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">
             Laporan pembayaran iuran bulanan dan transaksi keuangan perumahan
           </p>
         </div>
@@ -284,19 +261,20 @@ export default function FinancePage() {
             if (!open) resetForm();
           }}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full md:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
-                Input Manual
+                <span className="hidden sm:inline">Input Manual</span>
+                <span className="sm:hidden">Input</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl mx-4">
               <DialogHeader>
-                <DialogTitle>Input Manual Laporan Keuangan</DialogTitle>
+                <DialogTitle className="text-lg">Input Manual Laporan Keuangan</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="type">Tipe Transaksi *</Label>
+                    <Label htmlFor="type" className="text-sm font-medium">Tipe Transaksi *</Label>
                     <Select 
                       value={formData.type} 
                       onValueChange={(value: 'income' | 'expense') => 
@@ -314,25 +292,26 @@ export default function FinancePage() {
                   </div>
                   
                   <div>
-                    <Label htmlFor="date">Tanggal *</Label>
+                    <Label htmlFor="date" className="text-sm font-medium">Tanggal *</Label>
                     <Input
                       id="date"
                       type="date"
                       value={formData.date}
                       onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      className="mt-1"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="category">Kategori *</Label>
+                    <Label htmlFor="category" className="text-sm font-medium">Kategori *</Label>
                     <Select 
                       value={formData.category} 
                       onValueChange={(value) => setFormData({ ...formData, category: value })}
                       disabled={!formData.type}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Pilih kategori" />
                       </SelectTrigger>
                       <SelectContent>
@@ -346,7 +325,7 @@ export default function FinancePage() {
                   </div>
                   
                   <div>
-                    <Label htmlFor="amount">Jumlah (Rp) *</Label>
+                    <Label htmlFor="amount" className="text-sm font-medium">Jumlah (Rp) *</Label>
                     <Input
                       id="amount"
                       type="number"
@@ -355,29 +334,32 @@ export default function FinancePage() {
                       value={formData.amount}
                       onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                       placeholder="0"
+                      className="mt-1"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Deskripsi *</Label>
+                  <Label htmlFor="description" className="text-sm font-medium">Deskripsi *</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Jelaskan detail transaksi..."
                     rows={3}
+                    className="mt-1"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="proofUrl">URL Bukti Pembayaran (Opsional)</Label>
+                  <Label htmlFor="proofUrl" className="text-sm font-medium">URL Bukti Pembayaran (Opsional)</Label>
                   <Input
                     id="proofUrl"
                     type="url"
                     value={formData.proofUrl}
                     onChange={(e) => setFormData({ ...formData, proofUrl: e.target.value })}
                     placeholder="https://example.com/bukti.jpg"
+                    className="mt-1"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Link gambar bukti transaksi (nota, transfer, dll)
@@ -390,11 +372,11 @@ export default function FinancePage() {
                   </Alert>
                 )}
                 
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <div className="flex flex-col space-y-2 md:flex-row md:justify-end md:space-y-0 md:space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full md:w-auto">
                     Batal
                   </Button>
-                  <Button type="submit">
+                  <Button type="submit" className="w-full md:w-auto">
                     <Upload className="h-4 w-4 mr-2" />
                     Tambah
                   </Button>
@@ -413,14 +395,14 @@ export default function FinancePage() {
       )}
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Pemasukan</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium">Total Pemasukan</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-lg md:text-2xl font-bold text-green-600">
               Rp {totalIncome.toLocaleString('id-ID')}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -431,11 +413,11 @@ export default function FinancePage() {
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Pengeluaran</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium">Total Pengeluaran</CardTitle>
             <TrendingDown className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-lg md:text-2xl font-bold text-red-600">
               Rp {totalExpense.toLocaleString('id-ID')}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -446,10 +428,10 @@ export default function FinancePage() {
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Saldo</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium">Saldo</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${totalIncome - totalExpense >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-lg md:text-2xl font-bold ${totalIncome - totalExpense >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               Rp {(totalIncome - totalExpense).toLocaleString('id-ID')}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -458,38 +440,15 @@ export default function FinancePage() {
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Lunas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{paidCount}</div>
-            <p className="text-xs text-muted-foreground">
-              Rp {totalPaid.toLocaleString('id-ID')}
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Tertunda</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{pendingCount}</div>
-            <p className="text-xs text-muted-foreground">
-              Rp {totalPending.toLocaleString('id-ID')}
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle>Filter Laporan</CardTitle>
+        <CardHeader className="pb-4 md:pb-0">
+          <CardTitle className="text-lg">Filter Laporan</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <label className="text-sm font-medium mb-2 block">Bulan</label>
               <Select value={selectedMonth} onValueChange={setSelectedMonth}>
@@ -537,170 +496,145 @@ export default function FinancePage() {
                 </SelectContent>
               </Select>
             </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-2 block">Status</label>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Data Pembayaran</CardTitle>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Data Pembayaran</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted"
-                  onClick={() => handleSort('houseBlock')}
-                >
-                  Blok Rumah
-                  {sortColumn === 'houseBlock' && (
-                    <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                  )}
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted"
-                  onClick={() => handleSort('type')}
-                >
-                  Tipe Transaksi
-                  {sortColumn === 'type' && (
-                    <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                  )}
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted"
-                  onClick={() => handleSort('category')}
-                >
-                  Kategori
-                  {sortColumn === 'category' && (
-                    <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                  )}
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted"
-                  onClick={() => handleSort('paymentDate')}
-                >
-                  Tanggal
-                  {sortColumn === 'paymentDate' && (
-                    <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                  )}
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted"
-                  onClick={() => handleSort('amount')}
-                >
-                  Nominal
-                  {sortColumn === 'amount' && (
-                    <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                  )}
-                </TableHead>
-                <TableHead>Keterangan</TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted"
-                  onClick={() => handleSort('status')}
-                >
-                  Status
-                  {sortColumn === 'status' && (
-                    <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                  )}
-                </TableHead>
-                <TableHead>Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedPayments.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-4">
-                    Tidak ada data yang sesuai dengan filter
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredAndSortedPayments.map((payment) => (
-                  <TableRow key={payment.id}>
-                    <TableCell className="font-medium">{payment.houseBlock}</TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={payment.type === 'income' ? 'default' : 'destructive'}
-                        className={payment.type === 'income' ? 'bg-green-100 text-green-800' : ''}
+          {filteredAndSortedPayments.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Tidak ada data yang sesuai dengan filter</p>
+            </div>
+          ) : (
+            <>
+              {/* Desktop Table Layout */}
+              <div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted"
+                        onClick={() => handleSort('houseBlock')}
                       >
-                        {payment.type === 'income' ? (
-                          <><TrendingUp className="h-3 w-3 mr-1" />Masuk</>
-                        ) : (
-                          <><TrendingDown className="h-3 w-3 mr-1" />Keluar</>
+                        Blok Rumah
+                        {sortColumn === 'houseBlock' && (
+                          <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
                         )}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{payment.category}</TableCell>
-                    <TableCell>
-                      {format(payment.paymentDate, 'dd MMM yyyy', { locale: id })}
-                    </TableCell>
-                    <TableCell className={`font-semibold ${
-                      payment.type === 'income' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {payment.type === 'income' ? '+' : '-'}Rp {payment.amount.toLocaleString('id-ID')}
-                    </TableCell>
-                    <TableCell>{payment.description}</TableCell>
-                    <TableCell>
-                      <Badge variant={payment.status === 'paid' ? 'default' : 'destructive'}>
-                        {payment.status === 'paid' ? 'Lunas' : 'Tertunda'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setViewingTransaction(payment)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {payment.isManual && payment.proofUrl && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setViewingProof(payment.proofUrl!)}
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted"
+                        onClick={() => handleSort('type')}
+                      >
+                        Tipe Transaksi
+                        {sortColumn === 'type' && (
+                          <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted"
+                        onClick={() => handleSort('category')}
+                      >
+                        Kategori
+                        {sortColumn === 'category' && (
+                          <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted"
+                        onClick={() => handleSort('paymentDate')}
+                      >
+                        Tanggal
+                        {sortColumn === 'paymentDate' && (
+                          <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted"
+                        onClick={() => handleSort('amount')}
+                      >
+                        Nominal
+                        {sortColumn === 'amount' && (
+                          <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </TableHead>
+                      <TableHead>Keterangan</TableHead>
+                      <TableHead>Created By</TableHead>
+                      <TableHead>Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAndSortedPayments.map((payment) => (
+                      <TableRow key={payment.id}>
+                        <TableCell className="font-medium">{payment.houseBlock}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={payment.type === 'income' ? 'default' : 'destructive'}
+                            className={payment.type === 'income' ? 'bg-green-100 text-green-800' : ''}
                           >
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                            {payment.type === 'income' ? (
+                              <><TrendingUp className="h-3 w-3 mr-1" />Masuk</>
+                            ) : (
+                              <><TrendingDown className="h-3 w-3 mr-1" />Keluar</>
+                            )}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{payment.category}</TableCell>
+                        <TableCell>
+                          {format(payment.paymentDate, 'dd MMM yyyy', { locale: id })}
+                        </TableCell>
+                        <TableCell className={`font-semibold ${
+                          payment.type === 'income' ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {payment.type === 'income' ? '+' : '-'}Rp {payment.amount.toLocaleString('id-ID')}
+                        </TableCell>
+                        <TableCell>{payment.description}</TableCell>
+                        <TableCell>{payment.createdBy}</TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setViewingTransaction(payment)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {payment.isManual && payment.proofUrl && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setViewingProof(payment.proofUrl!)}
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
       {/* Detail Modal */}
       <Dialog open={!!viewingDetail} onOpenChange={() => setViewingDetail(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl mx-4">
           <DialogHeader>
-            <DialogTitle>Detail Input Manual</DialogTitle>
+            <DialogTitle className="text-lg">Detail Input Manual</DialogTitle>
           </DialogHeader>
           {viewingDetail && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Tipe Transaksi</Label>
+                  <Label className="text-sm font-medium">Tipe Transaksi</Label>
                   <div className="mt-1">
                     <Badge 
                       variant={viewingDetail.type === 'income' ? 'default' : 'destructive'}
@@ -715,20 +649,20 @@ export default function FinancePage() {
                   </div>
                 </div>
                 <div>
-                  <Label>Kategori</Label>
+                  <Label className="text-sm font-medium">Kategori</Label>
                   <p className="mt-1 font-medium">{viewingDetail.category}</p>
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Tanggal</Label>
+                  <Label className="text-sm font-medium">Tanggal</Label>
                   <p className="mt-1 font-medium">
                     {format(viewingDetail.date, 'dd MMMM yyyy', { locale: id })}
                   </p>
                 </div>
                 <div>
-                  <Label>Jumlah</Label>
+                  <Label className="text-sm font-medium">Jumlah</Label>
                   <p className={`mt-1 font-bold text-lg ${
                     viewingDetail.type === 'income' ? 'text-green-600' : 'text-red-600'
                   }`}>
@@ -738,18 +672,18 @@ export default function FinancePage() {
               </div>
               
               <div>
-                <Label>Deskripsi</Label>
+                <Label className="text-sm font-medium">Deskripsi</Label>
                 <p className="mt-1 text-sm bg-muted p-3 rounded-md">{viewingDetail.description}</p>
               </div>
               
               <div>
-                <Label>Dibuat Oleh</Label>
+                <Label className="text-sm font-medium">Dibuat Oleh</Label>
                 <p className="mt-1 text-sm">{viewingDetail.createdBy} pada {format(viewingDetail.createdAt, 'dd MMM yyyy HH:mm', { locale: id })}</p>
               </div>
               
               {viewingDetail.proofUrl && (
                 <div>
-                  <Label>Bukti Pembayaran</Label>
+                  <Label className="text-sm font-medium">Bukti Pembayaran</Label>
                   <div className="mt-2 aspect-video relative bg-gray-100 rounded overflow-hidden">
                     <Image
                       src={viewingDetail.proofUrl}
@@ -766,7 +700,7 @@ export default function FinancePage() {
               )}
               
               <div className="flex justify-end">
-                <Button onClick={() => setViewingDetail(null)}>
+                <Button onClick={() => setViewingDetail(null)} className="w-full md:w-auto">
                   Tutup
                 </Button>
               </div>
@@ -777,19 +711,19 @@ export default function FinancePage() {
 
       {/* Transaction Detail Modal */}
       <Dialog open={!!viewingTransaction} onOpenChange={() => setViewingTransaction(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl mx-4">
           <DialogHeader>
-            <DialogTitle>Detail Transaksi</DialogTitle>
+            <DialogTitle className="text-lg">Detail Transaksi</DialogTitle>
           </DialogHeader>
           {viewingTransaction && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Blok Rumah</Label>
+                  <Label className="text-sm font-medium">Blok Rumah</Label>
                   <p className="mt-1 font-medium">{viewingTransaction.houseBlock}</p>
                 </div>
                 <div>
-                  <Label>Tipe Transaksi</Label>
+                  <Label className="text-sm font-medium">Tipe Transaksi</Label>
                   <div className="mt-1">
                     <Badge 
                       variant={viewingTransaction.type === 'income' ? 'default' : 'destructive'}
@@ -805,13 +739,13 @@ export default function FinancePage() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Kategori</Label>
+                  <Label className="text-sm font-medium">Kategori</Label>
                   <p className="mt-1 font-medium">{viewingTransaction.category}</p>
                 </div>
                 <div>
-                  <Label>Status</Label>
+                  <Label className="text-sm font-medium">Status</Label>
                   <div className="mt-1">
                     <Badge variant={viewingTransaction.status === 'paid' ? 'default' : 'destructive'}>
                       {viewingTransaction.status === 'paid' ? 'Lunas' : 'Tertunda'}
@@ -820,15 +754,15 @@ export default function FinancePage() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Tanggal</Label>
+                  <Label className="text-sm font-medium">Tanggal</Label>
                   <p className="mt-1 font-medium">
                     {format(viewingTransaction.paymentDate, 'dd MMMM yyyy', { locale: id })}
                   </p>
                 </div>
                 <div>
-                  <Label>Jumlah</Label>
+                  <Label className="text-sm font-medium">Jumlah</Label>
                   <p className={`mt-1 font-bold text-lg ${
                     viewingTransaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                   }`}>
@@ -838,20 +772,20 @@ export default function FinancePage() {
               </div>
               
               <div>
-                <Label>Keterangan</Label>
+                <Label className="text-sm font-medium">Keterangan</Label>
                 <p className="mt-1 text-sm bg-muted p-3 rounded-md">{viewingTransaction.description}</p>
               </div>
               
               {viewingTransaction.isManual && (
                 <div>
-                  <Label>Dibuat Oleh</Label>
+                  <Label className="text-sm font-medium">Dibuat Oleh</Label>
                   <p className="mt-1 text-sm">{viewingTransaction.createdBy} pada {format(viewingTransaction.createdAt, 'dd MMM yyyy HH:mm', { locale: id })}</p>
                 </div>
               )}
               
               {viewingTransaction.proofUrl && (
                 <div>
-                  <Label>Bukti Pembayaran</Label>
+                  <Label className="text-sm font-medium">Bukti Pembayaran</Label>
                   <div className="mt-2 space-y-2">
                     <div className="aspect-video relative bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 overflow-hidden">
                       <Image
@@ -882,7 +816,7 @@ export default function FinancePage() {
               
               {!viewingTransaction.proofUrl && viewingTransaction.status === 'paid' && (
                 <div>
-                  <Label>Bukti Pembayaran</Label>
+                  <Label className="text-sm font-medium">Bukti Pembayaran</Label>
                   <div className="mt-2 p-4 bg-gray-50 rounded-lg border border-gray-200 text-center text-sm text-muted-foreground">
                     📄 Tidak ada bukti pembayaran yang tersedia
                   </div>
@@ -890,7 +824,7 @@ export default function FinancePage() {
               )}
               
               <div className="flex justify-end">
-                <Button onClick={() => setViewingTransaction(null)}>
+                <Button onClick={() => setViewingTransaction(null)} className="w-full md:w-auto">
                   Tutup
                 </Button>
               </div>
@@ -901,9 +835,9 @@ export default function FinancePage() {
 
       {/* Proof Viewer Dialog */}
       <Dialog open={!!viewingProof} onOpenChange={() => setViewingProof(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl mx-4">
           <DialogHeader>
-            <DialogTitle>Bukti Pembayaran</DialogTitle>
+            <DialogTitle className="text-lg">Bukti Pembayaran</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {viewingProof && (
@@ -921,7 +855,7 @@ export default function FinancePage() {
               </div>
             )}
             <div className="flex justify-end">
-              <Button onClick={() => setViewingProof(null)}>
+              <Button onClick={() => setViewingProof(null)} className="w-full md:w-auto">
                 Tutup
               </Button>
             </div>
