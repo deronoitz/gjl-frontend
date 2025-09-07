@@ -70,6 +70,7 @@ export interface FinancialRecord {
   description: string;
   date: Date;
   proofUrl?: string;
+  houseBlock?: string;
   createdBy: string;
   createdAt: Date;
 }

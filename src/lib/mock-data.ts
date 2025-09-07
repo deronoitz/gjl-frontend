@@ -27,6 +27,42 @@ export const mockUsers: User[] = [
     role: 'user',
     createdAt: new Date('2024-02-01'),
     updatedAt: new Date('2024-02-01')
+  },
+  {
+    id: '4',
+    houseNumber: 'A003',
+    name: 'Budi Santoso',
+    password_hash: 'user789', 
+    role: 'user',
+    createdAt: new Date('2024-03-01'),
+    updatedAt: new Date('2024-03-01')
+  },
+  {
+    id: '5',
+    houseNumber: 'B002',
+    name: 'Siti Rahayu',
+    password_hash: 'user101', 
+    role: 'user',
+    createdAt: new Date('2024-03-15'),
+    updatedAt: new Date('2024-03-15')
+  },
+  {
+    id: '6',
+    houseNumber: 'C001',
+    name: 'Ahmad Wijaya',
+    password_hash: 'user202', 
+    role: 'user',
+    createdAt: new Date('2024-04-01'),
+    updatedAt: new Date('2024-04-01')
+  },
+  {
+    id: '7',
+    houseNumber: 'C002',
+    name: 'Maria Lopez',
+    password_hash: 'user303', 
+    role: 'user',
+    createdAt: new Date('2024-04-15'),
+    updatedAt: new Date('2024-04-15')
   }
 ];
 

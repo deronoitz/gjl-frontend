@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { mockPayments } from '@/lib/mock-data';
-import { Payment, FinancialRecord } from '@/types';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/CustomAuthContext';
+import { useFinancialRecords, useHouseBlocks, FinancialRecord } from '@/hooks/use-financial-records';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,7 +19,9 @@ import {
   Plus, 
   Upload, 
   Eye,
-  FileText
+  FileText,
+  X,
+  Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -75,142 +76,180 @@ const expenseCategories = [
 
 export default function FinancePage() {
   const { user } = useAuth();
+  
+  // Custom hooks for API data
+  const {
+    records,
+    summary,
+    loading,
+    error,
+    fetchRecords,
+    createRecord,
+    uploadProof,
+  } = useFinancialRecords();
+
+  const { users } = useHouseBlocks();
+
+  // Filter states
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedYear, setSelectedYear] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
-  const [sortColumn, setSortColumn] = useState<keyof Payment | ''>('');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   
-  // Manual input states
-  const [manualRecords, setManualRecords] = useState<FinancialRecord[]>([]);
+  // UI states
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewingProof, setViewingProof] = useState<string | null>(null);
-  const [viewingDetail, setViewingDetail] = useState<FinancialRecord | null>(null);
-  const [viewingTransaction, setViewingTransaction] = useState<(Payment & { isManual: boolean; proofUrl?: string; createdBy: string; createdAt: Date }) | null>(null);
+  const [viewingTransaction, setViewingTransaction] = useState<FinancialRecord | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Form states
   const [formData, setFormData] = useState({
     type: '' as 'income' | 'expense' | '',
     category: '',
     amount: '',
     description: '',
     date: format(new Date(), 'yyyy-MM-dd'),
-    proofUrl: ''
+    houseBlock: '',
+    user_uuid: ''
   });
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [message, setMessage] = useState('');
 
   const isAdmin = user?.role === 'admin';
 
-  // Combine payments and manual records for display
-  const allTransactions = useMemo(() => {
-    const paymentTransactions = mockPayments.map(payment => ({
-      ...payment,
-      isManual: false,
-      proofUrl: undefined,
-      createdBy: payment.userId,
-      createdAt: payment.paymentDate
-    }));
-
-    const manualTransactions = manualRecords.map(record => ({
-      id: record.id,
-      houseBlock: 'Manual',
-      paymentDate: record.date,
-      amount: record.amount,
-      description: `[Manual] ${record.description}`,
-      status: 'paid' as const,
-      userId: record.createdBy,
-      type: record.type,
-      category: record.category,
-      isManual: true,
-      proofUrl: record.proofUrl,
-      createdBy: record.createdBy,
-      createdAt: record.createdAt
-    }));
-
-    return [...paymentTransactions, ...manualTransactions];
-  }, [manualRecords]);
-
-  const filteredAndSortedPayments = useMemo(() => {
-    let filtered = [...allTransactions];
-
-    // Filter by month
-    if (selectedMonth !== 'all') {
-      filtered = filtered.filter(payment => 
-        payment.paymentDate.getMonth() + 1 === parseInt(selectedMonth)
-      );
+  // Fetch records when filters change
+  useEffect(() => {
+    if (isAdmin) {
+      const filters: Record<string, string> = {};
+      if (selectedMonth !== 'all') filters.month = selectedMonth;
+      if (selectedYear !== 'all') filters.year = selectedYear;
+      if (selectedType !== 'all') filters.type = selectedType;
+      
+      fetchRecords(filters);
     }
+  }, [selectedMonth, selectedYear, selectedType, isAdmin, fetchRecords]);
 
-    // Filter by year
-    if (selectedYear !== 'all') {
-      filtered = filtered.filter(payment => 
-        payment.paymentDate.getFullYear() === parseInt(selectedYear)
-      );
-    }
-
-    // Filter by type
-    if (selectedType !== 'all') {
-      filtered = filtered.filter(payment => payment.type === selectedType);
-    }
-
-    // Sort
-    if (sortColumn) {
-      filtered.sort((a, b) => {
-        const aValue = a[sortColumn] || 0;
-        const bValue = b[sortColumn] || 0;
-        
-        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
-
-    return filtered;
-  }, [allTransactions, selectedMonth, selectedYear, selectedType, sortColumn, sortDirection]);
+  // Cleanup preview URL when component unmounts
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   // Handle functions for manual input
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      validateAndSetFile(file);
+    } else {
+      setProofFile(null);
+    }
+  };
+
+  const validateAndSetFile = (file: File) => {
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      setMessage('File harus berupa gambar (JPG, PNG, GIF) atau PDF');
+      return false;
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage('Ukuran file tidak boleh lebih dari 5MB');
+      return false;
+    }
+    
+    setProofFile(file);
+    
+    // Create preview URL for images
+    if (file.type.startsWith('image/')) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    } else {
+      setPreviewUrl(null);
+    }
+    
+    setMessage('');
+    return true;
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      validateAndSetFile(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
     
     if (!formData.type || !formData.category || !formData.amount || !formData.description || !formData.date) {
-      setMessage('Semua field wajib diisi kecuali bukti pembayaran');
+      setMessage('Semua field wajib diisi kecuali blok rumah dan bukti pembayaran');
+      setIsSubmitting(false);
       return;
     }
 
     const amount = parseFloat(formData.amount);
     if (isNaN(amount) || amount <= 0) {
       setMessage('Jumlah harus berupa angka positif');
+      setIsSubmitting(false);
       return;
     }
 
-    // Validate proof URL if provided
-    if (formData.proofUrl) {
-      try {
-        new URL(formData.proofUrl);
-      } catch {
-        setMessage('URL bukti pembayaran tidak valid');
-        return;
+    try {
+      let proofUrl: string | undefined = undefined;
+      
+      // Upload file if selected
+      if (proofFile) {
+        const uploadResult = await uploadProof(proofFile);
+        if (uploadResult) {
+          proofUrl = uploadResult.url;
+        } else {
+          setMessage('Gagal mengupload file bukti pembayaran');
+          setIsSubmitting(false);
+          return;
+        }
       }
+
+      // Create record
+      const recordData = {
+        type: formData.type as 'income' | 'expense',
+        category: formData.category,
+        amount,
+        description: formData.description,
+        date: formData.date,
+        house_block: formData.houseBlock || undefined,
+        user_uuid: formData.user_uuid || undefined,
+        proof_url: proofUrl,
+      };
+
+      const result = await createRecord(recordData);
+      
+      if (result) {
+        setMessage('Catatan keuangan berhasil ditambahkan');
+        resetForm();
+        setIsDialogOpen(false);
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage('Gagal menambahkan catatan keuangan');
+      }
+    } catch (err) {
+      setMessage('Terjadi kesalahan saat menyimpan data');
+      console.error('Submit error:', err);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Add new manual record
-    const newRecord: FinancialRecord = {
-      id: Date.now().toString(),
-      type: formData.type as 'income' | 'expense',
-      category: formData.category,
-      amount,
-      description: formData.description,
-      date: new Date(formData.date),
-      proofUrl: formData.proofUrl || undefined,
-      createdBy: user?.id || '',
-      createdAt: new Date()
-    };
-    setManualRecords([newRecord, ...manualRecords]);
-    setMessage('Catatan keuangan berhasil ditambahkan');
-
-    // Reset form
-    resetForm();
-    setIsDialogOpen(false);
-    
-    // Clear message after 3 seconds
-    setTimeout(() => setMessage(''), 3000);
   };
 
   const resetForm = () => {
@@ -220,30 +259,15 @@ export default function FinancePage() {
       amount: '',
       description: '',
       date: format(new Date(), 'yyyy-MM-dd'),
-      proofUrl: ''
+      houseBlock: '',
+      user_uuid: ''
     });
+    setProofFile(null);
+    setPreviewUrl(null);
     setMessage('');
   };
 
   const categories = formData.type === 'income' ? incomeCategories : expenseCategories;
-
-  const handleSort = (column: keyof Payment) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortColumn(column);
-      setSortDirection('desc');
-    }
-  };
-
-  // Calculate summary
-  const totalIncome = filteredAndSortedPayments
-    .filter(p => p.type === 'income' && p.status === 'paid')
-    .reduce((sum, p) => sum + p.amount, 0);
-    
-  const totalExpense = filteredAndSortedPayments
-    .filter(p => p.type === 'expense' && p.status === 'paid')
-    .reduce((sum, p) => sum + p.amount, 0);
 
   return (
     <div className="space-y-4">
@@ -267,11 +291,11 @@ export default function FinancePage() {
                 <span className="sm:hidden">Input</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl mx-4">
+            <DialogContent className="max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-lg">Input Manual Laporan Keuangan</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4 pb-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="type" className="text-sm font-medium">Tipe Transaksi *</Label>
@@ -340,6 +364,40 @@ export default function FinancePage() {
                 </div>
 
                 <div>
+                  <Label htmlFor="houseBlock" className="text-sm font-medium">Warga/Blok Rumah (Opsional)</Label>
+                  <Select 
+                    value={formData.user_uuid || 'none'} 
+                    onValueChange={(value) => {
+                      if (value === 'none') {
+                        setFormData({ ...formData, user_uuid: '', houseBlock: '' });
+                      } else {
+                        const selectedUser = users.find(u => u.id === value);
+                        setFormData({ 
+                          ...formData, 
+                          user_uuid: value, 
+                          houseBlock: selectedUser?.house_block || '' 
+                        });
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Pilih warga (opsional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Tidak dipilih</SelectItem>
+                      {users.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Pilih warga jika transaksi terkait dengan rumah tertentu
+                  </p>
+                </div>
+
+                <div>
                   <Label htmlFor="description" className="text-sm font-medium">Deskripsi *</Label>
                   <Textarea
                     id="description"
@@ -352,18 +410,114 @@ export default function FinancePage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="proofUrl" className="text-sm font-medium">URL Bukti Pembayaran (Opsional)</Label>
-                  <Input
-                    id="proofUrl"
-                    type="url"
-                    value={formData.proofUrl}
-                    onChange={(e) => setFormData({ ...formData, proofUrl: e.target.value })}
-                    placeholder="https://example.com/bukti.jpg"
-                    className="mt-1"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Link gambar bukti transaksi (nota, transfer, dll)
-                  </p>
+                  <Label htmlFor="proofFile" className="text-sm font-medium">Bukti Pembayaran (Opsional)</Label>
+                  <div 
+                    className="mt-1 relative"
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                  >
+                    {!proofFile ? (
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                        <div className="space-y-2">
+                          <Upload className="h-8 w-8 mx-auto text-gray-400" />
+                          <div className="text-sm text-gray-600">
+                            <label htmlFor="proofFile" className="cursor-pointer text-blue-600 hover:text-blue-500">
+                              Klik untuk upload file
+                            </label>
+                            {' '}atau drag & drop di sini
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            JPG, PNG, GIF atau PDF (maks. 5MB)
+                          </p>
+                        </div>
+                        <Input
+                          id="proofFile"
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={handleFileChange}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                      </div>
+                    ) : (
+                      <div className="border-2 border-green-300 rounded-lg p-4 bg-green-50">
+                        <div className="flex items-start space-x-3">
+                          <div className="flex-shrink-0">
+                            {proofFile.type.startsWith('image/') && previewUrl ? (
+                              <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden relative">
+                                <Image 
+                                  src={previewUrl} 
+                                  alt="Preview" 
+                                  fill
+                                  className="object-cover"
+                                  unoptimized
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-20 h-20 bg-red-100 rounded-lg flex items-center justify-center">
+                                <FileText className="h-10 w-10 text-red-600" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-green-800">
+                                  {proofFile.name}
+                                </p>
+                                <p className="text-xs text-green-600">
+                                  {(proofFile.size / 1024 / 1024).toFixed(2)} MB
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {proofFile.type.startsWith('image/') ? 'Gambar' : 'Dokumen PDF'}
+                                </p>
+                              </div>
+                              <div className="flex space-x-1 ml-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    // Change file
+                                    const fileInput = document.getElementById('proofFile') as HTMLInputElement;
+                                    if (fileInput) fileInput.click();
+                                  }}
+                                  className="text-xs px-2 py-1 h-6"
+                                >
+                                  Ubah
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    // Clean up preview URL
+                                    if (previewUrl) {
+                                      URL.revokeObjectURL(previewUrl);
+                                    }
+                                    setProofFile(null);
+                                    setPreviewUrl(null);
+                                    // Reset file input
+                                    const fileInput = document.getElementById('proofFile') as HTMLInputElement;
+                                    if (fileInput) fileInput.value = '';
+                                  }}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <Input
+                          id="proofFile"
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {message && (
@@ -373,12 +527,26 @@ export default function FinancePage() {
                 )}
                 
                 <div className="flex flex-col space-y-2 md:flex-row md:justify-end md:space-y-0 md:space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full md:w-auto">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsDialogOpen(false)}
+                    disabled={isSubmitting}
+                    className="w-full md:w-auto"
+                  >
                     Batal
                   </Button>
-                  <Button type="submit" className="w-full md:w-auto">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Tambah
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="w-full md:w-auto"
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-2" />
+                    )}
+                    {isSubmitting ? 'Menyimpan...' : 'Tambah'}
                   </Button>
                 </div>
               </form>
@@ -395,6 +563,7 @@ export default function FinancePage() {
       )}
 
       {/* Summary Cards */}
+      {/* Summary Cards */}
       <div className="grid gap-3 grid-cols-2 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -403,10 +572,10 @@ export default function FinancePage() {
           </CardHeader>
           <CardContent>
             <div className="text-lg md:text-2xl font-bold text-green-600">
-              Rp {totalIncome.toLocaleString('id-ID')}
+              Rp {summary.total_income.toLocaleString('id-ID')}
             </div>
             <p className="text-xs text-muted-foreground">
-              Dari {filteredAndSortedPayments.filter(p => p.type === 'income' && p.status === 'paid').length} transaksi
+              Dari {records.filter(r => r.type === 'income').length} transaksi
             </p>
           </CardContent>
         </Card>
@@ -418,10 +587,10 @@ export default function FinancePage() {
           </CardHeader>
           <CardContent>
             <div className="text-lg md:text-2xl font-bold text-red-600">
-              Rp {totalExpense.toLocaleString('id-ID')}
+              Rp {summary.total_expense.toLocaleString('id-ID')}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Dari {filteredAndSortedPayments.filter(p => p.type === 'expense' && p.status === 'paid').length} transaksi
+            <p className="text-xs text-muted-foregreen">
+              Dari {records.filter(r => r.type === 'expense').length} transaksi
             </p>
           </CardContent>
         </Card>
@@ -431,8 +600,8 @@ export default function FinancePage() {
             <CardTitle className="text-xs md:text-sm font-medium">Saldo</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-lg md:text-2xl font-bold ${totalIncome - totalExpense >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              Rp {(totalIncome - totalExpense).toLocaleString('id-ID')}
+            <div className={`text-lg md:text-2xl font-bold ${summary.net_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              Rp {summary.net_balance.toLocaleString('id-ID')}
             </div>
             <p className="text-xs text-muted-foreground">
               Pemasukan - Pengeluaran
@@ -441,6 +610,27 @@ export default function FinancePage() {
         </Card>
         
       </div>
+
+      {/* Show loading or error */}
+      {loading && (
+        <div className="flex justify-center items-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Memuat data...</span>
+        </div>
+      )}
+
+      {error && (
+        <Alert>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Show success message */}
+      {message && (
+        <Alert>
+          <AlertDescription>{message}</AlertDescription>
+        </Alert>
+      )}
 
       {/* Filters */}
       <Card>
@@ -506,7 +696,7 @@ export default function FinancePage() {
           <CardTitle className="text-lg">Data Pembayaran</CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredAndSortedPayments.length === 0 ? (
+          {!loading && records.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">Tidak ada data yang sesuai dengan filter</p>
             </div>
@@ -517,97 +707,69 @@ export default function FinancePage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead 
-                        className="cursor-pointer hover:bg-muted"
-                        onClick={() => handleSort('houseBlock')}
-                      >
-                        Blok Rumah
-                        {sortColumn === 'houseBlock' && (
-                          <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                        )}
-                      </TableHead>
-                      <TableHead 
-                        className="cursor-pointer hover:bg-muted"
-                        onClick={() => handleSort('type')}
-                      >
-                        Tipe Transaksi
-                        {sortColumn === 'type' && (
-                          <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                        )}
-                      </TableHead>
-                      <TableHead 
-                        className="cursor-pointer hover:bg-muted"
-                        onClick={() => handleSort('category')}
-                      >
-                        Kategori
-                        {sortColumn === 'category' && (
-                          <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                        )}
-                      </TableHead>
-                      <TableHead 
-                        className="cursor-pointer hover:bg-muted"
-                        onClick={() => handleSort('paymentDate')}
-                      >
-                        Tanggal
-                        {sortColumn === 'paymentDate' && (
-                          <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                        )}
-                      </TableHead>
-                      <TableHead 
-                        className="cursor-pointer hover:bg-muted"
-                        onClick={() => handleSort('amount')}
-                      >
-                        Nominal
-                        {sortColumn === 'amount' && (
-                          <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                        )}
-                      </TableHead>
+                      <TableHead>Blok Rumah</TableHead>
+                      <TableHead>Tipe Transaksi</TableHead>
+                      <TableHead>Kategori</TableHead>
+                      <TableHead>Tanggal</TableHead>
+                      <TableHead>Nominal</TableHead>
                       <TableHead>Keterangan</TableHead>
                       <TableHead>Created By</TableHead>
                       <TableHead>Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredAndSortedPayments.map((payment) => (
-                      <TableRow key={payment.id}>
-                        <TableCell className="font-medium">{payment.houseBlock}</TableCell>
+                    {records.map((record) => (
+                      <TableRow key={record.id}>
+                        <TableCell className="font-medium">
+                          {record.house_block || record.user?.house_number || '-'}
+                        </TableCell>
                         <TableCell>
                           <Badge 
-                            variant={payment.type === 'income' ? 'default' : 'destructive'}
-                            className={payment.type === 'income' ? 'bg-green-100 text-green-800' : ''}
+                            variant={record.type === 'income' ? 'default' : 'destructive'}
+                            className={record.type === 'income' ? 'bg-green-100 text-green-800' : ''}
                           >
-                            {payment.type === 'income' ? (
+                            {record.type === 'income' ? (
                               <><TrendingUp className="h-3 w-3 mr-1" />Masuk</>
                             ) : (
                               <><TrendingDown className="h-3 w-3 mr-1" />Keluar</>
                             )}
                           </Badge>
                         </TableCell>
-                        <TableCell>{payment.category}</TableCell>
+                        <TableCell>{record.category}</TableCell>
                         <TableCell>
-                          {format(payment.paymentDate, 'dd MMM yyyy', { locale: id })}
+                          {format(new Date(record.date), 'dd MMM yyyy', { locale: id })}
                         </TableCell>
                         <TableCell className={`font-semibold ${
-                          payment.type === 'income' ? 'text-green-600' : 'text-red-600'
+                          record.type === 'income' ? 'text-green-600' : 'text-red-600'
                         }`}>
-                          {payment.type === 'income' ? '+' : '-'}Rp {payment.amount.toLocaleString('id-ID')}
+                          {record.type === 'income' ? '+' : '-'}Rp {record.amount.toLocaleString('id-ID')}
                         </TableCell>
-                        <TableCell>{payment.description}</TableCell>
-                        <TableCell>{payment.createdBy}</TableCell>
+                        <TableCell>{record.description}</TableCell>
+                        <TableCell>{record.created_by_user?.name || 'System'}</TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setViewingTransaction(payment)}
+                              onClick={() => setViewingTransaction(record)}
+                              title="Lihat detail transaksi"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            {payment.isManual && payment.proofUrl && (
+                            {record.proof_url && (
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setViewingProof(payment.proofUrl!)}
+                                onClick={() => {
+                                  if (record.proof_url!.toLowerCase().includes('.pdf')) {
+                                    // For PDFs, open in new tab
+                                    window.open(record.proof_url!, '_blank');
+                                  } else {
+                                    // For images, show in modal
+                                    setViewingProof(record.proof_url!);
+                                  }
+                                }}
+                                title="Lihat bukti pembayaran"
                               >
                                 <FileText className="h-4 w-4" />
                               </Button>
@@ -624,103 +786,53 @@ export default function FinancePage() {
         </CardContent>
       </Card>
 
-      {/* Detail Modal */}
-      <Dialog open={!!viewingDetail} onOpenChange={() => setViewingDetail(null)}>
-        <DialogContent className="max-w-2xl mx-4">
-          <DialogHeader>
-            <DialogTitle className="text-lg">Detail Input Manual</DialogTitle>
-          </DialogHeader>
-          {viewingDetail && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">Tipe Transaksi</Label>
-                  <div className="mt-1">
-                    <Badge 
-                      variant={viewingDetail.type === 'income' ? 'default' : 'destructive'}
-                      className={viewingDetail.type === 'income' ? 'bg-green-100 text-green-800' : ''}
-                    >
-                      {viewingDetail.type === 'income' ? (
-                        <><TrendingUp className="h-3 w-3 mr-1" />Pemasukan</>
-                      ) : (
-                        <><TrendingDown className="h-3 w-3 mr-1" />Pengeluaran</>
-                      )}
-                    </Badge>
-                  </div>
+      {/* Image Viewer Modal */}
+      {viewingProof && (
+        <Dialog open={!!viewingProof} onOpenChange={() => setViewingProof(null)}>
+          <DialogContent className="max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Bukti Pembayaran</DialogTitle>
+            </DialogHeader>
+            <div className="mt-4 pb-4">
+              {viewingProof.toLowerCase().includes('.pdf') ? (
+                <div className="text-center py-8">
+                  <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                  <p className="mb-4">File PDF tidak dapat ditampilkan di sini</p>
+                  <Button onClick={() => window.open(viewingProof, '_blank')}>
+                    Buka dalam Tab Baru
+                  </Button>
                 </div>
-                <div>
-                  <Label className="text-sm font-medium">Kategori</Label>
-                  <p className="mt-1 font-medium">{viewingDetail.category}</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">Tanggal</Label>
-                  <p className="mt-1 font-medium">
-                    {format(viewingDetail.date, 'dd MMMM yyyy', { locale: id })}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Jumlah</Label>
-                  <p className={`mt-1 font-bold text-lg ${
-                    viewingDetail.type === 'income' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {viewingDetail.type === 'income' ? '+' : '-'}Rp {viewingDetail.amount.toLocaleString('id-ID')}
-                  </p>
-                </div>
-              </div>
-              
-              <div>
-                <Label className="text-sm font-medium">Deskripsi</Label>
-                <p className="mt-1 text-sm bg-muted p-3 rounded-md">{viewingDetail.description}</p>
-              </div>
-              
-              <div>
-                <Label className="text-sm font-medium">Dibuat Oleh</Label>
-                <p className="mt-1 text-sm">{viewingDetail.createdBy} pada {format(viewingDetail.createdAt, 'dd MMM yyyy HH:mm', { locale: id })}</p>
-              </div>
-              
-              {viewingDetail.proofUrl && (
-                <div>
-                  <Label className="text-sm font-medium">Bukti Pembayaran</Label>
-                  <div className="mt-2 aspect-video relative bg-gray-100 rounded overflow-hidden">
-                    <Image
-                      src={viewingDetail.proofUrl}
-                      alt="Bukti Pembayaran"
-                      fill
-                      className="object-contain"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
-                    />
-                  </div>
+              ) : (
+                <div className="relative max-h-96 overflow-hidden rounded-lg">
+                  <Image
+                    src={viewingProof}
+                    alt="Bukti Pembayaran"
+                    width={800}
+                    height={600}
+                    className="w-full h-auto object-contain"
+                    unoptimized
+                  />
                 </div>
               )}
-              
-              <div className="flex justify-end">
-                <Button onClick={() => setViewingDetail(null)} className="w-full md:w-auto">
-                  Tutup
-                </Button>
-              </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Transaction Detail Modal */}
-      <Dialog open={!!viewingTransaction} onOpenChange={() => setViewingTransaction(null)}>
-        <DialogContent className="max-w-2xl mx-4">
-          <DialogHeader>
-            <DialogTitle className="text-lg">Detail Transaksi</DialogTitle>
-          </DialogHeader>
-          {viewingTransaction && (
-            <div className="space-y-4">
+      {viewingTransaction && (
+        <Dialog open={!!viewingTransaction} onOpenChange={() => setViewingTransaction(null)}>
+          <DialogContent className="max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-lg">Detail Transaksi</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pb-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium">Blok Rumah</Label>
-                  <p className="mt-1 font-medium">{viewingTransaction.houseBlock}</p>
+                  <p className="mt-1 font-medium">
+                    {viewingTransaction.house_block || viewingTransaction.user?.house_number || '-'}
+                  </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Tipe Transaksi</Label>
@@ -747,9 +859,7 @@ export default function FinancePage() {
                 <div>
                   <Label className="text-sm font-medium">Status</Label>
                   <div className="mt-1">
-                    <Badge variant={viewingTransaction.status === 'paid' ? 'default' : 'destructive'}>
-                      {viewingTransaction.status === 'paid' ? 'Lunas' : 'Tertunda'}
-                    </Badge>
+                    <Badge variant="default">Tercatat</Badge>
                   </div>
                 </div>
               </div>
@@ -758,7 +868,7 @@ export default function FinancePage() {
                 <div>
                   <Label className="text-sm font-medium">Tanggal</Label>
                   <p className="mt-1 font-medium">
-                    {format(viewingTransaction.paymentDate, 'dd MMMM yyyy', { locale: id })}
+                    {format(new Date(viewingTransaction.date), 'dd MMMM yyyy', { locale: id })}
                   </p>
                 </div>
                 <div>
@@ -776,49 +886,45 @@ export default function FinancePage() {
                 <p className="mt-1 text-sm bg-muted p-3 rounded-md">{viewingTransaction.description}</p>
               </div>
               
-              {viewingTransaction.isManual && (
-                <div>
-                  <Label className="text-sm font-medium">Dibuat Oleh</Label>
-                  <p className="mt-1 text-sm">{viewingTransaction.createdBy} pada {format(viewingTransaction.createdAt, 'dd MMM yyyy HH:mm', { locale: id })}</p>
-                </div>
-              )}
+              <div>
+                <Label className="text-sm font-medium">Dibuat Oleh</Label>
+                <p className="mt-1 text-sm">
+                  {viewingTransaction.created_by_user?.name || 'System'} pada{' '}
+                  {format(new Date(viewingTransaction.created_at), 'dd MMM yyyy HH:mm', { locale: id })}
+                </p>
+              </div>
               
-              {viewingTransaction.proofUrl && (
+              {viewingTransaction.proof_url && (
                 <div>
                   <Label className="text-sm font-medium">Bukti Pembayaran</Label>
                   <div className="mt-2 space-y-2">
-                    <div className="aspect-video relative bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 overflow-hidden">
-                      <Image
-                        src={viewingTransaction.proofUrl}
-                        alt="Bukti Pembayaran"
-                        fill
-                        className="object-contain p-2"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                        }}
-                      />
-                    </div>
-                    <div className="flex justify-between items-center text-sm text-muted-foreground">
-                      <span>📸 Bukti pembayaran tersedia</span>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setViewingProof(viewingTransaction.proofUrl!)}
-                      >
-                        <Eye className="h-3 w-3 mr-1" />
-                        Lihat Penuh
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {!viewingTransaction.proofUrl && viewingTransaction.status === 'paid' && (
-                <div>
-                  <Label className="text-sm font-medium">Bukti Pembayaran</Label>
-                  <div className="mt-2 p-4 bg-gray-50 rounded-lg border border-gray-200 text-center text-sm text-muted-foreground">
-                    📄 Tidak ada bukti pembayaran yang tersedia
+                    {viewingTransaction.proof_url.toLowerCase().includes('.pdf') ? (
+                      <div className="p-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                        <FileText className="h-12 w-12 mx-auto mb-2 text-gray-600" />
+                        <p className="text-sm text-gray-600 mb-2">File bukti pembayaran</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(viewingTransaction.proof_url!, '_blank')}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Lihat File
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="aspect-video relative bg-gray-100 rounded overflow-hidden max-h-64">
+                        <Image
+                          src={viewingTransaction.proof_url}
+                          alt="Bukti Pembayaran"
+                          fill
+                          className="object-contain"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -829,39 +935,9 @@ export default function FinancePage() {
                 </Button>
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Proof Viewer Dialog */}
-      <Dialog open={!!viewingProof} onOpenChange={() => setViewingProof(null)}>
-        <DialogContent className="max-w-2xl mx-4">
-          <DialogHeader>
-            <DialogTitle className="text-lg">Bukti Pembayaran</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {viewingProof && (
-              <div className="aspect-video relative bg-gray-100 rounded overflow-hidden">
-                <Image
-                  src={viewingProof}
-                  alt="Bukti Pembayaran"
-                  fill
-                  className="object-contain"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
-                />
-              </div>
-            )}
-            <div className="flex justify-end">
-              <Button onClick={() => setViewingProof(null)} className="w-full md:w-auto">
-                Tutup
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
