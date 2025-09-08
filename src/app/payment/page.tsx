@@ -178,7 +178,7 @@ export default function PaymentPage() {
       // Set loading state to true to show loading indicator
       // This will be handled by the individual hooks
 
-      // Fetch payment records from payment_records table for the selected year
+      // Fetch payment records from payment_records table for the selected year (only for status display)
       fetchPaymentRecords({
         userId: user.id,
         tahun: selectedYear, // Make sure we're fetching for the correct year
@@ -186,13 +186,13 @@ export default function PaymentPage() {
         console.error("Failed to fetch payment records:", error);
       });
 
-      // Fetch financial records for payment history (all records for this house block and year)
+      // Fetch financial records for payment history (all records for this house block - all years)
       if (user.houseNumber) {
-        console.log("Fetching financial records for house:", user.houseNumber, "year:", selectedYear);
+        console.log("Fetching financial records for house:", user.houseNumber, "- all years for history");
         fetchFinancialRecords({
           house_block: user.houseNumber,
-          year: selectedYear.toString(), // Make sure we're fetching for the correct year
-          limit: 50, // Get more records for history
+          // Remove year filter to get all years for payment history
+          limit: 100, // Increase limit to get more records from all years
           show_all_status: "true", // Special parameter to show all statuses for payment page
         }).catch((error) => {
           console.error("Failed to fetch financial records:", error);
@@ -204,7 +204,7 @@ export default function PaymentPage() {
   }, [
     user?.id,
     user?.houseNumber,
-    selectedYear, // This dependency ensures data is refetched when year changes
+    selectedYear, // Keep this dependency for status display refresh
     fetchPaymentRecords,
     fetchFinancialRecords,
   ]);
@@ -760,9 +760,14 @@ export default function PaymentPage() {
       </Card>
 
       {/* Payment History */}
-      <Card key={`payment-history-${selectedYear}`}>
+      <Card key={`payment-history-all-years`}>
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg">Riwayat Pembayaran</CardTitle>
+          <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
+            <CardTitle className="text-lg">Riwayat Pembayaran</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Menampilkan semua riwayat pembayaran dari semua tahun
+            </p>
+          </div>
         </CardHeader>
         <CardContent>
           {financialLoading ? (
@@ -789,6 +794,9 @@ export default function PaymentPage() {
                           {format(payment.paymentDate, "dd MMM yyyy HH:mm", {
                             locale: id,
                           })}
+                          <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                            {format(payment.paymentDate, "yyyy")}
+                          </span>
                         </p>
                         {payment.id.startsWith("financial_") && (
                           <p className="text-xs text-green-600 mt-1">
@@ -836,6 +844,7 @@ export default function PaymentPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Tanggal</TableHead>
+                      <TableHead>Tahun</TableHead>
                       <TableHead>Keterangan</TableHead>
                       <TableHead>Nominal</TableHead>
                       <TableHead>Status</TableHead>
@@ -849,6 +858,11 @@ export default function PaymentPage() {
                           {format(payment.paymentDate, "dd MMM yyyy HH:mm", {
                             locale: id,
                           })}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="font-mono">
+                            {format(payment.paymentDate, "yyyy")}
+                          </Badge>
                         </TableCell>
                         <TableCell>{payment.description}</TableCell>
                         <TableCell>
@@ -900,26 +914,44 @@ export default function PaymentPage() {
 
               {/* Summary */}
               <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center text-sm">
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  <span className="font-medium">
-                    Total{" "}
-                    {
-                      combinedPaymentHistory.filter((p) => p.status === "paid")
-                        .length
-                    }{" "}
-                    pembayaran tercatat
-                  </span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <span className="font-medium">
+                      Total{" "}
+                      {
+                        combinedPaymentHistory.filter((p) => p.status === "paid")
+                          .length
+                      }{" "}
+                      pembayaran lunas
+                    </span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-green-600">
+                      Total nilai lunas: Rp{" "}
+                      {combinedPaymentHistory
+                        .reduce(
+                          (sum, p) => sum + (p.status === "paid" ? p.amount : 0),
+                          0
+                        )
+                        .toLocaleString("id-ID")}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">
+                      Periode: {combinedPaymentHistory.length > 0 ? 
+                        `${format(
+                          new Date(Math.min(...combinedPaymentHistory.map(p => p.paymentDate.getTime()))), 
+                          "yyyy"
+                        )} - ${format(
+                          new Date(Math.max(...combinedPaymentHistory.map(p => p.paymentDate.getTime()))), 
+                          "yyyy"
+                        )}` 
+                        : "Tidak ada data"
+                      }
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Total nilai: Rp{" "}
-                  {combinedPaymentHistory
-                    .reduce(
-                      (sum, p) => sum + (p.status === "paid" ? p.amount : 0),
-                      0
-                    )
-                    .toLocaleString("id-ID")}
-                </p>
               </div>
             </>
           )}

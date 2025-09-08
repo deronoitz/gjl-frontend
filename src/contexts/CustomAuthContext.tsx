@@ -12,6 +12,7 @@ interface CustomAuthContextType {
   logout: () => Promise<void>;
   checkSession: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
+  changePhoneNumber: (phoneNumber: string) => Promise<{ success: boolean; message: string; user?: AuthUser }>;
 }
 
 const CustomAuthContext = createContext<CustomAuthContextType | null>(null);

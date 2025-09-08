@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Home, LogOut, DollarSign, CreditCard, Camera, Users, Megaphone, Settings, Lock, Menu, X, ChevronDown, ChevronUp, Network } from 'lucide-react';
+import { Home, LogOut, DollarSign, CreditCard, Camera, Users, Megaphone, Settings, Lock, Menu, X, ChevronDown, ChevronUp, Network, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import ChangePasswordDialog from '@/components/ChangePasswordDialog';
+import ChangePhoneDialog from '@/components/ChangePhoneDialog';
 
 const navigationItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -61,6 +62,7 @@ export default function Navigation() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isChangePhoneOpen, setIsChangePhoneOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mobileDropdowns, setMobileDropdowns] = useState<{[key: string]: boolean}>({});
 
@@ -203,6 +205,10 @@ export default function Navigation() {
                       <Lock className="mr-2 h-4 w-4" />
                       <span>Ganti Password</span>
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsChangePhoneOpen(true)}>
+                      <Phone className="mr-2 h-4 w-4" />
+                      <span>Ganti Nomor HP</span>
+                    </DropdownMenuItem>
                     {isAdmin && (
                       <DropdownMenuItem asChild>
                         <Link href="/admin/settings">
@@ -330,6 +336,16 @@ export default function Navigation() {
                     <Lock className="mr-3 h-5 w-5" />
                     Ganti Password
                   </button>
+                  <button
+                    onClick={() => {
+                      setIsChangePhoneOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center w-full px-3 py-3 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-white/70 transition-colors"
+                  >
+                    <Phone className="mr-3 h-5 w-5" />
+                    Ganti Nomor HP
+                  </button>
                   {isAdmin && (
                     <Link
                       href="/admin/settings"
@@ -359,6 +375,11 @@ export default function Navigation() {
         <ChangePasswordDialog 
           open={isChangePasswordOpen}
           onOpenChange={setIsChangePasswordOpen}
+        />
+        
+        <ChangePhoneDialog 
+          open={isChangePhoneOpen}
+          onOpenChange={setIsChangePhoneOpen}
         />
       </nav>
 

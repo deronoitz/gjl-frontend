@@ -12,6 +12,7 @@ export interface AuthUser {
   id: string;
   houseNumber: string;
   name: string;
+  phoneNumber?: string;
   role: 'admin' | 'user';
   createdAt?: Date;
   updatedAt?: Date;
@@ -161,7 +162,7 @@ export class CustomAuth {
       // Get user data
       const user = Array.isArray(session.users) ? session.users[0] : session.users;
 
-      return this.mapDbUserToAuthUser(user as { id: string; house_number: string; name: string; role: 'admin' | 'user'; created_at?: string; updated_at?: string; });
+      return this.mapDbUserToAuthUser(user as { id: string; house_number: string; name: string; phone_number?: string; role: 'admin' | 'user'; created_at?: string; updated_at?: string; });
     } catch (error) {
       console.error('Session verification error:', error);
       return null;
@@ -232,11 +233,12 @@ export class CustomAuth {
   /**
    * Map database user to AuthUser interface
    */
-  private static mapDbUserToAuthUser(dbUser: { id: string; house_number: string; name: string; role: 'admin' | 'user'; created_at?: string; updated_at?: string; }): AuthUser {
+  private static mapDbUserToAuthUser(dbUser: { id: string; house_number: string; name: string; phone_number?: string; role: 'admin' | 'user'; created_at?: string; updated_at?: string; }): AuthUser {
     return {
       id: dbUser.id,
       houseNumber: dbUser.house_number,
       name: dbUser.name,
+      phoneNumber: dbUser.phone_number,
       role: dbUser.role,
       createdAt: dbUser.created_at ? new Date(dbUser.created_at) : undefined,
       updatedAt: dbUser.updated_at ? new Date(dbUser.updated_at) : undefined,

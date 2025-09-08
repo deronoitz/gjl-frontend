@@ -116,11 +116,45 @@ export function useCustomAuth() {
     }
   }, []);
 
+  const changePhoneNumber = useCallback(async (phoneNumber: string): Promise<{ success: boolean; message: string; user?: AuthUser }> => {
+    try {
+      const response = await fetch('/api/auth/change-phone', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phoneNumber }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Update local auth state with the new user data
+        if (data.user) {
+          setAuthState(prev => ({
+            ...prev,
+            user: prev.user ? {
+              ...prev.user,
+              ...data.user
+            } : data.user
+          }));
+        }
+        return { success: true, message: data.message, user: data.user };
+      } else {
+        return { success: false, message: data.error || 'Failed to change phone number' };
+      }
+    } catch (error) {
+      console.error('Change phone number error:', error);
+      return { success: false, message: 'Failed to change phone number' };
+    }
+  }, []);
+
   return {
     ...authState,
     login,
     logout,
     checkSession,
     changePassword,
+    changePhoneNumber,
   };
 }

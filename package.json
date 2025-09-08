@@ -24,6 +24,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@supabase/supabase-js": "^2.57.2",
     "@types/bcryptjs": "^2.4.6",
+    "@vercel/analytics": "^1.5.0",
     "base64-arraybuffer": "^1.0.2",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",

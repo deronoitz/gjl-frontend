@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import PWAInstall from '@/components/PWAInstall';
 import OfflineIndicator from '@/components/OfflineIndicator';
 import UpdateNotification from '@/components/UpdateNotification';
+import { Analytics } from '@vercel/analytics/react';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -76,6 +77,7 @@ export default function RootLayout({
             </main>
             <Toaster />
             <PWAInstall />
+            <Analytics />
           </CustomAuthProvider>
         </ThemeProvider>
       </body>
