@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/CustomAuthContext";
 import { useSettings } from "@/hooks/use-settings";
-import { usePaymentStatus } from "@/hooks/use-payment-status";
 import { useFinancialRecords } from "@/hooks/use-financial-records";
+import { usePaymentRecords } from "@/hooks/use-payment-records";
 import { mockPayments } from "@/lib/mock-data";
 import { Payment } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -82,10 +82,10 @@ export default function PaymentPage() {
   const { user } = useAuth();
   const { settings } = useSettings();
   const {
-    paymentData,
-    loading: paymentLoading,
-    fetchPaymentStatus,
-  } = usePaymentStatus();
+    paymentRecords,
+    loading: paymentRecordsLoading,
+    fetchPaymentRecords,
+  } = usePaymentRecords();
   const {
     records: financialRecords,
     loading: financialLoading,
@@ -120,17 +120,18 @@ export default function PaymentPage() {
   useEffect(() => {
     if (user?.id) {
       console.log(
-        "Fetching payment status for user:",
+        "Fetching payment records for user:",
         user.id,
         "year:",
         selectedYear
       );
-      fetchPaymentStatus({
+      
+      // Fetch payment records from payment_records table
+      fetchPaymentRecords({
         userId: user.id,
         tahun: selectedYear,
       }).catch((error) => {
-        console.error("Failed to fetch payment status:", error);
-        // Don't continue fetching if there's an auth error
+        console.error("Failed to fetch payment records:", error);
       });
 
       // Fetch financial records for payment history (all records for this house block)
@@ -146,13 +147,13 @@ export default function PaymentPage() {
         });
       }
     } else {
-      console.log("No user found, skipping payment status fetch");
+      console.log("No user found, skipping payment records fetch");
     }
   }, [
     user?.id,
     user?.houseNumber,
     selectedYear,
-    fetchPaymentStatus,
+    fetchPaymentRecords,
     fetchFinancialRecords,
   ]);
 
@@ -248,7 +249,13 @@ export default function PaymentPage() {
       setIsNewPaymentDialogOpen(false);
       resetNewPaymentForm();
       
-      // Refresh financial records to show the new pending payments
+      // Refresh payment records and financial records to show the new data
+      if (fetchPaymentRecords) {
+        fetchPaymentRecords({
+          userId: user.id,
+          tahun: selectedYear,
+        });
+      }
       if (fetchFinancialRecords && user.houseNumber) {
         fetchFinancialRecords({
           house_block: user.houseNumber,
@@ -296,78 +303,28 @@ export default function PaymentPage() {
     }
   };
 
-  // Generate monthly payment status for current year using both mock data and real backend data
+  // Generate monthly payment status for current year using payment_records table only
   const generateMonthlyPaymentStatus = () => {
-    const paidPayments = userPayments.filter((p) => p.status === "paid");
-
     return MONTHS.map((month, index) => {
       const monthNumber = index + 1;
 
-      // Check mock payments (local data)
-      const mockMonthPayments = paidPayments.filter((payment) => {
-        const paymentDate = new Date(payment.paymentDate);
-        const paymentMonth = paymentDate.getMonth() + 1;
-        const paymentYear = paymentDate.getFullYear();
-
-        // Check if payment description contains the month name or payment date matches
-        const descriptionContainsMonth = payment.description
-          .toLowerCase()
-          .includes(month.toLowerCase());
-        const dateMatches =
-          paymentMonth === monthNumber && paymentYear === selectedYear;
-
-        return descriptionContainsMonth || dateMatches;
-      });
-
-      // Check backend payment records from payment_status table
-      const backendMonthPayments = paymentData.filter((record) => {
+      // Check payment records from payment_records table
+      const monthPaymentRecords = paymentRecords.filter((record) => {
         return record.bulan === monthNumber && record.tahun === selectedYear;
       });
 
-      // Check backend financial records for this house block and month
-      const financialMonthRecords =
-        financialRecords?.filter((record) => {
-          const recordDate = new Date(record.date);
-          const recordMonth = recordDate.getMonth() + 1;
-          const recordYear = recordDate.getFullYear();
-          return (
-            recordMonth === monthNumber &&
-            recordYear === selectedYear &&
-            record.type === "income" &&
-            (record.house_block === user.houseNumber ||
-              record.user_uuid === user.id) &&
-            record.status === "done" // Only consider 'done' status for payment status calculation
-          );
-        }) || [];
+      // A month is considered paid if there's a record in payment_records table
+      const isPaid = monthPaymentRecords.length > 0;
 
-      // A month is considered paid if there's either mock data, backend payment status, or financial records
-      const isPaid =
-        mockMonthPayments.length > 0 ||
-        backendMonthPayments.length > 0 ||
-        financialMonthRecords.length > 0;
-
-      // Calculate total amount from all sources
-      const mockAmount = mockMonthPayments.reduce(
-        (sum, p) => sum + p.amount,
-        0
-      );
-      const backendAmount =
-        backendMonthPayments.length > 0
-          ? settings?.monthly_fee?.amount || 150000
-          : 0;
-      const financialAmount = financialMonthRecords.reduce(
-        (sum, r) => sum + Number(r.amount),
-        0
-      );
+      // Calculate amount - use settings monthly fee amount if paid
+      const amount = isPaid ? (settings?.monthly_fee?.amount || 150000) : 0;
 
       return {
         month,
         monthNumber,
         isPaid,
-        payments: mockMonthPayments,
-        backendRecords: backendMonthPayments,
-        financialRecords: financialMonthRecords,
-        amount: mockAmount + backendAmount + financialAmount,
+        paymentRecords: monthPaymentRecords,
+        amount,
       };
     });
   };
@@ -624,7 +581,7 @@ export default function PaymentPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {paymentLoading ? (
+          {paymentRecordsLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               <span className="ml-2 text-sm text-muted-foreground">

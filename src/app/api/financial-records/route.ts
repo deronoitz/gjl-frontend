@@ -23,6 +23,14 @@ export async function GET(request: NextRequest) {
     // Check authentication
     const user = await getAuthenticatedUser(request);
     
+    // Automatically expire old pending payments before querying
+    try {
+      await supabaseService.rpc('expire_old_pending_payments');
+    } catch (expireError) {
+      // Log the error but don't fail the main request
+      console.warn('Failed to expire old pending payments:', expireError);
+    }
+    
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const category = searchParams.get('category');

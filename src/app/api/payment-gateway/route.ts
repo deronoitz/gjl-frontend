@@ -23,6 +23,7 @@ interface PaymentRequest {
   reference_id: string;
   sender_name: string;
   sender_email: string;
+  expired_date: string;
   item_details: PaymentItem[];
 }
 
@@ -120,6 +121,11 @@ export async function POST(request: NextRequest) {
     });
     const title = `${user.houseNumber} ${monthNamesSelected.join('-')}`;
 
+    // Calculate expired date (1 day from now)
+    const expiredDate = new Date();
+    expiredDate.setDate(expiredDate.getDate() + 1);
+    const expiredDateString = expiredDate.toISOString().slice(0, 16).replace('T', ' ');
+
     // Prepare payment request
     const paymentRequest: PaymentRequest = {
       title,
@@ -128,6 +134,7 @@ export async function POST(request: NextRequest) {
       reference_id: referenceId,
       sender_name: user.name,
       sender_email: `${user.houseNumber}@gjl.com`, // Generate email from house number
+      expired_date: expiredDateString,
       item_details: itemDetails
     };
 
@@ -139,7 +146,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Call payment gateway API
-    const response = await fetch('https://bigflip.id/api/v3/pwf/bill', {
+    const response = await fetch('https://ae-automation.fly.dev/webhook/generate-payment', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${flipAuthKey}`,
