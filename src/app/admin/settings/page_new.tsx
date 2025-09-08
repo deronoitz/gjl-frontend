@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/CustomAuthContext';
-import { useSettings } from '@/hooks/use-settings';
+import { useSettings, AppSettings } from '@/hooks/use-settings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

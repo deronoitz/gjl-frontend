@@ -23,7 +23,21 @@ export async function GET(
 
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, house_number, role, name, created_at, updated_at')
+      .select(`
+        id, 
+        house_number, 
+        role, 
+        name, 
+        phone_number, 
+        position_id,
+        created_at, 
+        updated_at,
+        positions (
+          id,
+          position,
+          order
+        )
+      `)
       .eq('id', resolvedParams.id)
       .single();
 
@@ -57,7 +71,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { houseNumber, password, role, name } = body;
+    const { houseNumber, password, role, name, phoneNumber, position_id } = body;
 
     if (!houseNumber || !name) {
       return NextResponse.json(
@@ -82,18 +96,30 @@ export async function PUT(
     }
 
     // Prepare update data
-    const updateData: {
+    interface UpdateData {
       house_number: string;
       name: string;
+      phone_number?: string | null;
+      position_id?: string | null;
       role: string;
       updated_at: string;
       password_hash?: string;
-    } = {
+    }
+
+    const updateData: UpdateData = {
       house_number: houseNumber,
       name: name,
+      phone_number: phoneNumber || null,
       role: role,
       updated_at: new Date().toISOString(),
     };
+
+    // Set position_id or clear it if not provided
+    if (position_id) {
+      updateData.position_id = position_id;
+    } else {
+      updateData.position_id = null;
+    }
 
     // Only update password if provided
     if (password && password.trim() !== '') {
@@ -105,7 +131,21 @@ export async function PUT(
       .from('users')
       .update(updateData)
       .eq('id', resolvedParams.id)
-      .select('id, house_number, name, role, created_at, updated_at')
+      .select(`
+        id, 
+        house_number, 
+        name, 
+        phone_number, 
+        position_id,
+        role, 
+        created_at, 
+        updated_at,
+        positions (
+          id,
+          position,
+          order
+        )
+      `)
       .single();
 
     if (updateError || !updatedUser) {

@@ -149,21 +149,33 @@ export const useAppStore = create<AppState>()(
         try {
           set({ isLoading: true });
           const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
+            .from('users')
+            .select(`
+              *,
+              positions (
+                id,
+                position,
+                order,
+                created_at,
+                updated_at
+              )
+            `)
             .order('created_at', { ascending: false });
 
           if (error) throw error;
 
           // Transform data to match User interface
-          const users = data.map((profile) => ({
-            id: profile.id,
-            houseNumber: profile.house_number,
-            name: profile.name || 'Unknown',
+          const users = data.map((user) => ({
+            id: user.id,
+            houseNumber: user.house_number,
+            name: user.name || 'Unknown',
+            phoneNumber: user.phone_number,
+            position_id: user.position_id,
+            positions: user.positions,
             password_hash: '', // Don't expose password hash
-            role: profile.role as 'admin' | 'user',
-            createdAt: new Date(profile.created_at),
-            updatedAt: new Date(profile.updated_at || profile.created_at),
+            role: user.role as 'admin' | 'user',
+            createdAt: new Date(user.created_at),
+            updatedAt: new Date(user.updated_at || user.created_at),
           }));
 
           set({ users });

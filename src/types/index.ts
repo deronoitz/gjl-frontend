@@ -1,7 +1,18 @@
+export interface Position {
+  id: string;
+  position: string;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface User {
   id: string;
   houseNumber: string;
   name: string;
+  phoneNumber?: string;
+  position_id?: string;
+  positions?: Position; // Joined position data
   password_hash: string;
   role: 'admin' | 'user';
   createdAt: Date;
@@ -12,6 +23,9 @@ export interface AuthUser {
   id: string;
   houseNumber: string;
   name: string;
+  phoneNumber?: string;
+  position_id?: string;
+  positions?: Position; // Joined position data
   role: 'admin' | 'user';
   createdAt?: Date;
   updatedAt?: Date;
@@ -74,4 +88,12 @@ export interface FinancialRecord {
   houseBlock?: string;
   createdBy: string;
   createdAt: Date;
+}
+
+export interface Position {
+  id: string;
+  position: string;
+  order: number;
+  created_at: string;
+  updated_at: string;
 }

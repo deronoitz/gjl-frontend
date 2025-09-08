@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     
     if (session.role !== 'admin') {
       // Non-admin users can only see specific public settings
-      query = query.in('setting_key', ['monthly_fee', 'app_name']);
+      query = query.in('setting_key', ['monthly_fee', 'qris_fee', 'app_name']);
     }
 
     const { data: settings, error } = await query;
@@ -70,6 +70,18 @@ export async function PUT(request: NextRequest) {
             (value as { amount: number }).amount < 0) {
           return NextResponse.json({ 
             error: 'Invalid monthly fee format. Expected: {amount: number, currency: string}' 
+          }, { status: 400 });
+        }
+      }
+
+      if (key === 'qris_fee') {
+        // Validate QRIS fee
+        if (!value || typeof value !== 'object' || !('percentage' in value) || 
+            typeof (value as { percentage: unknown }).percentage !== 'number' || 
+            (value as { percentage: number }).percentage < 0 || 
+            (value as { percentage: number }).percentage > 100) {
+          return NextResponse.json({ 
+            error: 'Invalid QRIS fee format. Expected: {percentage: number} between 0-100' 
           }, { status: 400 });
         }
       }

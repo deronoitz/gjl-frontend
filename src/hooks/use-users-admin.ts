@@ -4,6 +4,13 @@ export interface User {
   id: string;
   house_number: string;
   name: string;
+  phone_number?: string;
+  position_id?: string;
+  positions?: {
+    id: string;
+    position: string;
+    order: number;
+  };
   role: 'admin' | 'user';
   created_at: string;
   updated_at: string;
@@ -12,6 +19,8 @@ export interface User {
 export interface CreateUserData {
   houseNumber: string;
   name: string;
+  phoneNumber?: string;
+  position_id?: string;
   password: string;
   role: 'admin' | 'user';
 }
@@ -19,6 +28,8 @@ export interface CreateUserData {
 export interface UpdateUserData {
   houseNumber: string;
   name: string;
+  phoneNumber?: string;
+  position_id?: string;
   password?: string;
   role: 'admin' | 'user';
 }

@@ -5,6 +5,9 @@ export interface AppSettings {
     amount: number;
     currency: string;
   };
+  qris_fee: {
+    percentage: number;
+  };
   app_name: string;
   contact_info?: {
     phone: string;
@@ -17,6 +20,9 @@ const defaultSettings: AppSettings = {
   monthly_fee: {
     amount: 150000,
     currency: 'IDR'
+  },
+  qris_fee: {
+    percentage: 0.7
   },
   app_name: 'Griya Jannatin Leyangan'
 };

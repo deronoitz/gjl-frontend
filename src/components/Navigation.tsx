@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Home, LogOut, DollarSign, CreditCard, Camera, Users, Megaphone, Settings, Lock, Menu, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Home, LogOut, DollarSign, CreditCard, Camera, Users, Megaphone, Settings, Lock, Menu, X, ChevronDown, ChevronUp, Network } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -23,6 +23,14 @@ const navigationItems = [
     ]
   },
   { name: 'Galeri', href: '/gallery', icon: Camera },
+  { 
+    name: 'Warga', 
+    icon: Users,
+    subItems: [
+      { name: 'Daftar Warga', href: '/warga', icon: Users },
+      { name: 'Struktur Organisasi', href: '/struktur-organisasi', icon: Network },
+    ]
+  },
 ];
 
 const adminNavItems = [
@@ -37,7 +45,15 @@ const adminNavItems = [
     ]
   },
   { name: 'Galeri', href: '/gallery', icon: Camera },
-  { name: 'Warga', href: '/admin/users', icon: Users },
+  { 
+    name: 'Warga', 
+    icon: Users,
+    subItems: [
+      { name: 'Daftar Warga', href: '/warga', icon: Users },
+      { name: 'Kelola Warga', href: '/admin/users', icon: Users },
+      { name: 'Struktur Organisasi', href: '/struktur-organisasi', icon: Network },
+    ]
+  },
   { name: 'Pengumuman', href: '/admin/announcements', icon: Megaphone }
 ];
 

@@ -19,7 +19,21 @@ export async function GET(request: NextRequest) {
 
     const { data: users, error } = await supabase
       .from('users')
-      .select('id, house_number, role, name, created_at, updated_at')
+      .select(`
+        id, 
+        house_number, 
+        role, 
+        name, 
+        phone_number, 
+        position_id,
+        created_at, 
+        updated_at,
+        positions (
+          id,
+          position,
+          order
+        )
+      `)
       .order('house_number', { ascending: true });
 
     if (error) {
@@ -49,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { houseNumber, password, role = 'user', name } = body;
+    const { houseNumber, password, role = 'user', name, phoneNumber, position_id } = body;
 
     if (!houseNumber || !password || !name) {
       return NextResponse.json(
@@ -75,16 +89,48 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // Prepare user data
+    interface UserData {
+      house_number: string;
+      name: string;
+      phone_number: string | null;
+      password_hash: string;
+      role: string;
+      position_id?: string;
+    }
+
+    const userData: UserData = {
+      house_number: houseNumber,
+      name: name,
+      phone_number: phoneNumber || null,
+      password_hash: hashedPassword,
+      role: role,
+    };
+
+    // Use position_id if provided
+    if (position_id) {
+      userData.position_id = position_id;
+    }
+
     // Create user in our custom users table
     const { data: newUser, error: userError } = await supabase
       .from('users')
-      .insert({
-        house_number: houseNumber,
-        name: name,
-        password_hash: hashedPassword,
-        role: role,
-      })
-      .select()
+      .insert(userData)
+      .select(`
+        id, 
+        house_number, 
+        role, 
+        name, 
+        phone_number, 
+        position_id,
+        created_at, 
+        updated_at,
+        positions (
+          id,
+          position,
+          order
+        )
+      `)
       .single();
 
     if (userError || !newUser) {
@@ -99,6 +145,9 @@ export async function POST(request: NextRequest) {
       id: newUser.id,
       house_number: newUser.house_number,
       name: newUser.name,
+      phone_number: newUser.phone_number,
+      position_id: newUser.position_id,
+      positions: newUser.positions,
       role: newUser.role,
       created_at: newUser.created_at,
     }, { status: 201 });

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useUsers, User } from '@/hooks/use-users-admin';
+import { usePositions } from '@/hooks/use-positions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,11 +17,14 @@ import { id } from 'date-fns/locale';
 
 export default function AdminUsersPage() {
   const { users, loading, error, createUser, updateUser, deleteUser } = useUsers();
+  const { positions, loading: positionsLoading, error: positionsError } = usePositions();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     houseNumber: '',
     name: '',
+    phoneNumber: '',
+    position_id: '',
     password: '',
     role: 'user' as 'admin' | 'user'
   });
@@ -48,6 +52,8 @@ export default function AdminUsersPage() {
         await updateUser(editingUser.id, {
           houseNumber: formData.houseNumber,
           name: formData.name,
+          phoneNumber: formData.phoneNumber || undefined,
+          position_id: formData.position_id || undefined,
           password: formData.password || undefined,
           role: formData.role
         });
@@ -57,6 +63,8 @@ export default function AdminUsersPage() {
         await createUser({
           houseNumber: formData.houseNumber,
           name: formData.name,
+          phoneNumber: formData.phoneNumber || undefined,
+          position_id: formData.position_id || undefined,
           password: formData.password,
           role: formData.role
         });
@@ -64,7 +72,7 @@ export default function AdminUsersPage() {
       }
 
       // Reset form
-      setFormData({ houseNumber: '', name: '', password: '', role: 'user' });
+      setFormData({ houseNumber: '', name: '', phoneNumber: '', position_id: '', password: '', role: 'user' });
       setEditingUser(null);
       setIsDialogOpen(false);
       
@@ -82,6 +90,8 @@ export default function AdminUsersPage() {
     setFormData({
       houseNumber: user.house_number,
       name: user.name,
+      phoneNumber: user.phone_number || '',
+      position_id: user.position_id || '',
       password: '',
       role: user.role
     });
@@ -101,7 +111,7 @@ export default function AdminUsersPage() {
   };
 
   const resetDialog = () => {
-    setFormData({ houseNumber: '', name: '', password: '', role: 'user' });
+    setFormData({ houseNumber: '', name: '', phoneNumber: '', position_id: '', password: '', role: 'user' });
     setEditingUser(null);
     setMessage('');
   };
@@ -156,6 +166,46 @@ export default function AdminUsersPage() {
                     placeholder="Nama lengkap"
                     className="h-11"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phoneNumber" className="text-sm font-medium">Nomor Handphone</Label>
+                  <Input
+                    id="phoneNumber"
+                    value={formData.phoneNumber}
+                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                    placeholder="Contoh: +62-812-3456-7890"
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="position" className="text-sm font-medium">Jabatan</Label>
+                  {positionsError && (
+                    <div className="text-xs text-red-500 mb-1">Error loading positions: {positionsError}</div>
+                  )}
+                  <select
+                    id="position"
+                    value={formData.position_id}
+                    onChange={(e) => {
+                      const selectedPositionId = e.target.value;
+                      setFormData({ 
+                        ...formData, 
+                        position_id: selectedPositionId
+                      });
+                    }}
+                    className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    disabled={positionsLoading}
+                  >
+                    <option value="">Pilih Jabatan (opsional)</option>
+                    {positions.map((position) => (
+                      <option key={position.id} value={position.id}>
+                        {position.position}
+                      </option>
+                    ))}
+                  </select>
+                  {positionsLoading && (
+                    <div className="text-xs text-gray-500">Loading positions...</div>
+                  )}
+                  <div className="text-xs text-gray-400">Positions loaded: {positions.length}</div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-sm font-medium">
@@ -238,6 +288,12 @@ export default function AdminUsersPage() {
                             <span className="font-semibold text-base">{user.house_number}</span>
                           </div>
                           <p className="text-sm text-gray-600 font-medium">{user.name}</p>
+                          {user.phone_number && (
+                            <p className="text-xs text-gray-500">📞 {user.phone_number}</p>
+                          )}
+                          {user.positions?.position && (
+                            <p className="text-xs text-gray-500">🏛️ {user.positions.position}</p>
+                          )}
                         </div>
                         <Badge 
                           variant={user.role === 'admin' ? 'destructive' : 'secondary'} 
@@ -300,6 +356,8 @@ export default function AdminUsersPage() {
                     <TableRow>
                       <TableHead>Nomor Rumah</TableHead>
                       <TableHead>Nama</TableHead>
+                      <TableHead>No. Handphone</TableHead>
+                      <TableHead>Jabatan</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Tanggal Daftar</TableHead>
                       <TableHead>Aksi</TableHead>
@@ -310,6 +368,8 @@ export default function AdminUsersPage() {
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">{user.house_number}</TableCell>
                         <TableCell>{user.name}</TableCell>
+                        <TableCell>{user.phone_number || '-'}</TableCell>
+                        <TableCell>{user.positions?.position || '-'}</TableCell>
                         <TableCell>
                           <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'} className="capitalize">
                             {user.role}
