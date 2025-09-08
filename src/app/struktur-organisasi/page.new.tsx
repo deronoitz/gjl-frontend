@@ -29,8 +29,8 @@ export default function StrukturOrganisasiPage() {
       return 6;
     };
 
-    const priorityA = getPositionPriority(a.position);
-    const priorityB = getPositionPriority(b.position);
+    const priorityA = getPositionPriority(a.positions?.position || '');
+    const priorityB = getPositionPriority(b.positions?.position || '');
     
     if (priorityA !== priorityB) {
       return priorityA - priorityB;
@@ -100,7 +100,7 @@ export default function StrukturOrganisasiPage() {
         <Card className="border-slate-200">
           <CardContent className="p-4 text-center">
             <div className="text-2xl md:text-3xl font-bold text-emerald-700">
-              {users.filter(u => u.position && u.position !== '').length}
+              {users.filter(u => u.positions?.position && u.positions.position !== '').length}
             </div>
             <div className="text-sm text-slate-600">Punya Jabatan</div>
           </CardContent>
@@ -137,7 +137,7 @@ export default function StrukturOrganisasiPage() {
                 <TableRow 
                   key={userData.id} 
                   className={`hover:bg-slate-50 border-slate-200 ${
-                    userData.position && userData.position !== '' ? 'bg-emerald-50/50' : ''
+                    userData.positions?.position && userData.positions.position !== '' ? 'bg-emerald-50/50' : ''
                   }`}
                 >
                   <TableCell className="font-medium text-slate-900">
@@ -148,12 +148,12 @@ export default function StrukturOrganisasiPage() {
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
-                      {userData.position ? (
+                      {userData.positions?.position ? (
                         <Badge 
                           variant="secondary" 
                           className="bg-emerald-100 text-emerald-800 border-emerald-200 font-medium"
                         >
-                          {userData.position}
+                          {userData.positions.position}
                         </Badge>
                       ) : (
                         <span className="text-slate-500">-</span>
