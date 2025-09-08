@@ -5,6 +5,9 @@ import { CustomAuthProvider } from '@/contexts/CustomAuthContext';
 import Navigation from '@/components/Navigation';
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import PWAInstall from '@/components/PWAInstall';
+import OfflineIndicator from '@/components/OfflineIndicator';
+import UpdateNotification from '@/components/UpdateNotification';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,6 +22,21 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Griya Jannatin Leyangan",
   description: "Aplikasi manajemen perumahan",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "GJL App",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "default",
+    "apple-mobile-web-app-title": "GJL App",
+  },
 };
 
 export default function RootLayout({
@@ -27,7 +45,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="id" suppressHydrationWarning>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <meta name="theme-color" content="#2563eb" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="GJL App" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no, viewport-fit=cover" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
@@ -39,10 +69,13 @@ export default function RootLayout({
         >
           <CustomAuthProvider>
             <Navigation />
+            <OfflineIndicator />
+            <UpdateNotification />
             <main className="container mx-auto px-3 md:px-4 py-4 md:py-6 pt-20 md:pt-24">
               {children}
             </main>
             <Toaster />
+            <PWAInstall />
           </CustomAuthProvider>
         </ThemeProvider>
       </body>

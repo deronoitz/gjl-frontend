@@ -1,4 +1,6 @@
 import type { NextConfig } from "next";
+// @ts-expect-error - next-pwa doesn't have proper TypeScript declarations
+import withPWA from "next-pwa";
 
 const nextConfig: NextConfig = {
   images: {
@@ -43,4 +45,12 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withPWA({
+  dest: "public",
+  disable: false,
+  register: true,
+  skipWaiting: true,
+  fallbacks: {
+    document: "/offline",
+  },
+})(nextConfig);

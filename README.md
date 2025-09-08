@@ -1,4 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Griya Jannatin Leyangan - Management System
+
+A comprehensive web application for managing residential community operations, built with Next.js and Supabase.
+
+## 🚀 Features
+
+- **User Authentication & Authorization** - Secure login system with role-based access
+- **Dashboard** - Overview of community statistics and activities
+- **Payment Management** - Track and manage monthly fees and payments
+- **Gallery** - Community photo gallery management
+- **Announcements** - Admin announcements and community notices
+- **Resident Management** - Manage resident information and house blocks
+- **Financial Records** - Comprehensive financial tracking and reporting
+- **Organizational Structure** - Display community organizational hierarchy
+- **📱 Progressive Web App (PWA)** - Installable app experience on mobile and desktop
+
+## 📱 PWA Features
+
+- ✅ **Installable** - Install directly to home screen
+- ✅ **Offline Support** - Works without internet connection
+- ✅ **Service Worker** - Automatic caching for better performance
+- ✅ **App-like Experience** - Full screen mode
+- ✅ **Auto Updates** - Automatic updates when available
+- ✅ **Install Prompt** - Smart installation prompts
+
+See [PWA Installation Guide](PWA_INSTALLATION_GUIDE.md) for detailed installation instructions.
 
 ## Getting Started
 
@@ -16,7 +41,24 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Build for Production
+
+```bash
+npm run build
+npm start
+```
+
+The PWA features are only available in production mode.
+
+## Tech Stack
+
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **Styling**: Tailwind CSS, Radix UI
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Custom auth with Supabase
+- **PWA**: next-pwa with Workbox
+- **State Management**: Zustand
+- **Form Handling**: React Hook Form + Zod
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
