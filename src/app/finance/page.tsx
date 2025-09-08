@@ -30,11 +30,13 @@ import {
   Eye,
   FileText,
   X,
-  Loader2
+  Loader2,
+  Download
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import Image from 'next/image';
+import { exportFinancialReportToPDF } from '@/lib/pdf-export';
 
 const MONTHS = [
   { value: 'all', label: 'Semua Bulan' },
@@ -113,6 +115,7 @@ export default function FinancePage() {
   const [viewingProof, setViewingProof] = useState<string | null>(null);
   const [viewingTransaction, setViewingTransaction] = useState<FinancialRecord | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   
   // Form states
   const [formData, setFormData] = useState({
@@ -324,6 +327,40 @@ export default function FinancePage() {
     setMessage('');
   };
 
+  const handleExportPDF = async () => {
+    if (records.length === 0) {
+      setMessage('Tidak ada data untuk di export');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const filters = {
+        month: selectedMonth !== 'all' ? selectedMonth : undefined,
+        year: selectedYear !== 'all' ? selectedYear : undefined,
+        type: selectedType !== 'all' ? selectedType : undefined,
+      };
+
+      const success = await exportFinancialReportToPDF({
+        records,
+        summary,
+        filters
+      });
+
+      if (success) {
+        setMessage('Laporan PDF berhasil diunduh');
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage('Gagal membuat file PDF');
+      }
+    } catch (error) {
+      console.error('Export PDF error:', error);
+      setMessage('Terjadi kesalahan saat membuat PDF');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const categories = formData.type === 'income' ? incomeCategories : expenseCategories;
 
   return (
@@ -336,18 +373,40 @@ export default function FinancePage() {
           </p>
         </div>
         
-        {isAdmin && (
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button className="w-full md:w-auto">
-                <Plus className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Input Manual</span>
-                <span className="sm:hidden">Input</span>
-              </Button>
-            </DialogTrigger>
+        <div className="flex flex-col sm:flex-row gap-2">
+          {/* Export PDF Button */}
+          <Button 
+            variant="outline" 
+            className="w-full sm:w-auto"
+            onClick={handleExportPDF}
+            disabled={isExporting || records.length === 0}
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            <span className="hidden sm:inline">
+              {isExporting ? 'Mengunduh...' : 'Export PDF'}
+            </span>
+            <span className="sm:hidden">
+              {isExporting ? 'Mengunduh...' : 'PDF'}
+            </span>
+          </Button>
+
+          {/* Input Manual Button for Admin */}
+          {isAdmin && (
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button className="w-full sm:w-auto">
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Input Manual</span>
+                  <span className="sm:hidden">Input</span>
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-lg">Input Manual Laporan Keuangan</DialogTitle>
@@ -608,8 +667,9 @@ export default function FinancePage() {
                 </div>
               </form>
             </DialogContent>
-          </Dialog>
-        )}
+            </Dialog>
+          )}
+        </div>
       </div>
 
       {message && (
