@@ -166,7 +166,7 @@ export default function Navigation() {
                 <Badge variant={isAdmin ? 'destructive' : 'secondary'}>
                   {isAdmin ? 'Admin' : 'User'}
                 </Badge>
-                <span className="text-sm font-medium">{user.houseNumber}</span>
+                <span className="text-sm font-medium">{user.name}</span>
               </div>
               
               {/* Mobile menu button */}

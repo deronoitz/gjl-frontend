@@ -25,7 +25,7 @@ export default function DashboardPage() {
       <div className="space-y-1">
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-sm md:text-base text-muted-foreground">
-          Selamat datang, {user.houseNumber}
+          Selamat datang, {user.name}
         </p>
       </div>
 
