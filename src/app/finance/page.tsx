@@ -106,7 +106,7 @@ export default function FinancePage() {
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 15;
+  const ITEMS_PER_PAGE = 10;
   
   // UI states
   const [isDialogOpen, setIsDialogOpen] = useState(false);

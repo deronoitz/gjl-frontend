@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuth } from '@/contexts/CustomAuthContext';
 import { useAnnouncements } from '@/hooks/use-announcements';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,46 @@ import { Badge } from '@/components/ui/badge';
 import MonthlyFeeCard from '@/components/MonthlyFeeCard';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Bell, Calendar } from 'lucide-react';
+import { Bell, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+
+// Component untuk menampilkan content dengan tombol lihat selengkapnya
+function AnnouncementContent({ content, maxLength = 200 }: { content: string; maxLength?: number }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  if (content.length <= maxLength) {
+    return (
+      <p className="text-xs md:text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+        {content}
+      </p>
+    );
+  }
+  
+  const truncatedContent = content.substring(0, maxLength) + '...';
+  
+  return (
+    <div className="space-y-2">
+      <p className="text-xs md:text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+        {isExpanded ? content : truncatedContent}
+      </p>
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
+      >
+        {isExpanded ? (
+          <>
+            <ChevronUp className="h-3 w-3" />
+            Lihat lebih sedikit
+          </>
+        ) : (
+          <>
+            <ChevronDown className="h-3 w-3" />
+            Lihat selengkapnya
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -90,9 +130,10 @@ export default function DashboardPage() {
                     </div>
                     
                     {/* Content - truncated on mobile */}
-                    <p className="text-xs md:text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                      {announcement.content}
-                    </p>
+                    <AnnouncementContent 
+                      content={announcement.content}
+                      maxLength={150}
+                    />
                     
                     {/* Author - smaller on mobile */}
                     {announcement.authorName && (

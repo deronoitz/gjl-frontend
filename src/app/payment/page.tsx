@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/CustomAuthContext";
 import { useSettings } from "@/hooks/use-settings";
 import { useFinancialRecords } from "@/hooks/use-financial-records";
-import { usePaymentRecords } from "@/hooks/use-payment-records";
+import { usePaymentRecords, PaymentRecord } from "@/hooks/use-payment-records";
 import { mockPayments } from "@/lib/mock-data";
 import { Payment } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -118,6 +118,52 @@ export default function PaymentPage() {
 
   // Loading state for payment creation
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
+  
+  // State untuk menyimpan payment records untuk tahun form (sementara)
+  const [formYearPaymentRecords, setFormYearPaymentRecords] = useState<{
+    year: number;
+    records: PaymentRecord[];
+  }>({ year: 0, records: [] });
+  
+  // Function to fetch payment records for a specific year (for form)
+  const fetchPaymentRecordsForYear = useCallback(async (year: number) => {
+    if (!user?.id) return [];
+    
+    try {
+      const params = new URLSearchParams();
+      params.append('userId', user.id);
+      params.append('tahun', year.toString());
+
+      const response = await fetch(`/api/payment-status?${params.toString()}`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch payment records');
+      }
+
+      return result.data || [];
+    } catch (error) {
+      console.error('Error fetching payment records for year:', year, error);
+      return [];
+    }
+  }, [user?.id]);
+
+  // Effect to fetch payment records for the selected year in payment form if it's different from current year
+  useEffect(() => {
+    const formYear = parseInt(newPaymentForm.year);
+    if (user?.id && formYear && formYear !== selectedYear && isNewPaymentDialogOpen) {
+      console.log('Fetching payment records for form year:', formYear);
+      // Fetch payment records for the form year so we can check which months are paid
+      if (formYearPaymentRecords.year !== formYear) {
+        fetchPaymentRecordsForYear(formYear).then((records) => {
+          setFormYearPaymentRecords({
+            year: formYear,
+            records: records || []
+          });
+        });
+      }
+    }
+  }, [newPaymentForm.year, selectedYear, user?.id, isNewPaymentDialogOpen, fetchPaymentRecordsForYear, formYearPaymentRecords.year]);
 
   // Fetch payment records when component mounts or year changes
   useEffect(() => {
@@ -129,20 +175,23 @@ export default function PaymentPage() {
         selectedYear
       );
 
-      // Fetch payment records from payment_records table
+      // Set loading state to true to show loading indicator
+      // This will be handled by the individual hooks
+
+      // Fetch payment records from payment_records table for the selected year
       fetchPaymentRecords({
         userId: user.id,
-        tahun: selectedYear,
+        tahun: selectedYear, // Make sure we're fetching for the correct year
       }).catch((error) => {
         console.error("Failed to fetch payment records:", error);
       });
 
-      // Fetch financial records for payment history (all records for this house block)
+      // Fetch financial records for payment history (all records for this house block and year)
       if (user.houseNumber) {
-        console.log("Fetching financial records for house:", user.houseNumber);
+        console.log("Fetching financial records for house:", user.houseNumber, "year:", selectedYear);
         fetchFinancialRecords({
           house_block: user.houseNumber,
-          year: selectedYear.toString(),
+          year: selectedYear.toString(), // Make sure we're fetching for the correct year
           limit: 50, // Get more records for history
           show_all_status: "true", // Special parameter to show all statuses for payment page
         }).catch((error) => {
@@ -155,7 +204,7 @@ export default function PaymentPage() {
   }, [
     user?.id,
     user?.houseNumber,
-    selectedYear,
+    selectedYear, // This dependency ensures data is refetched when year changes
     fetchPaymentRecords,
     fetchFinancialRecords,
   ]);
@@ -261,16 +310,22 @@ export default function PaymentPage() {
       if (fetchPaymentRecords) {
         fetchPaymentRecords({
           userId: user.id,
-          tahun: selectedYear,
+          tahun: parseInt(newPaymentForm.year), // Use the year from the payment form
         });
       }
       if (fetchFinancialRecords && user.houseNumber) {
         fetchFinancialRecords({
           house_block: user.houseNumber,
-          year: selectedYear.toString(),
+          year: newPaymentForm.year, // Use the year from the payment form
           limit: 50,
           show_all_status: "true",
         });
+      }
+      
+      // If the payment was created for a different year than currently selected,
+      // update the selected year to show the new payment
+      if (parseInt(newPaymentForm.year) !== selectedYear) {
+        setSelectedYear(parseInt(newPaymentForm.year));
       }
     } catch (error) {
       console.error("Error creating payment:", error);
@@ -298,6 +353,8 @@ export default function PaymentPage() {
       months: [],
       year: new Date().getFullYear().toString(),
     });
+    // Clear form year payment records when resetting
+    setFormYearPaymentRecords({ year: 0, records: [] });
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -313,16 +370,31 @@ export default function PaymentPage() {
   };
 
   // Generate monthly payment status for current year using payment_records table only
-  const generateMonthlyPaymentStatus = () => {
+  const generateMonthlyPaymentStatus = (year: number = selectedYear) => {
+    console.log('Generating monthly payment status for year:', year);
+    
+    // Choose the correct payment records based on the year
+    let recordsToUse = paymentRecords;
+    if (year !== selectedYear && formYearPaymentRecords.year === year) {
+      recordsToUse = formYearPaymentRecords.records;
+      console.log('Using form year payment records:', recordsToUse);
+    } else {
+      console.log('Using main payment records:', recordsToUse);
+    }
+    
     return MONTHS.map((month, index) => {
       const monthNumber = index + 1;
 
-      // Check payment records from payment_records table
-      const monthPaymentRecords = paymentRecords.filter((record) => {
-        return record.bulan === monthNumber && record.tahun === selectedYear;
+      // Check payment records from payment_records table - filter by both month AND year
+      const monthPaymentRecords = recordsToUse.filter((record) => {
+        const isMatch = record.bulan === monthNumber && record.tahun === year;
+        if (isMatch) {
+          console.log(`Found payment for ${month} ${year}:`, record);
+        }
+        return isMatch;
       });
 
-      // A month is considered paid if there's a record in payment_records table
+      // A month is considered paid if there's a record in payment_records table for this specific year
       const isPaid = monthPaymentRecords.length > 0;
 
       // Calculate amount - use settings monthly fee amount if paid
@@ -339,6 +411,12 @@ export default function PaymentPage() {
   };
 
   const monthlyStatus = generateMonthlyPaymentStatus();
+
+  console.log('Monthly status for year', selectedYear, ':', monthlyStatus.map(s => ({
+    month: s.month,
+    isPaid: s.isPaid,
+    recordsCount: s.paymentRecords.length
+  })));
 
   // Combine mock payments with backend financial records for payment history
   const getCombinedPaymentHistory = () => {
@@ -420,7 +498,13 @@ export default function PaymentPage() {
 
         <Dialog
           open={isNewPaymentDialogOpen}
-          onOpenChange={setIsNewPaymentDialogOpen}
+          onOpenChange={(open) => {
+            setIsNewPaymentDialogOpen(open);
+            if (!open) {
+              // Clear form year payment records when dialog closes
+              setFormYearPaymentRecords({ year: 0, records: [] });
+            }
+          }}
         >
           <DialogTrigger asChild>
             <Button size={"lg"} className="w-full md:w-auto">
@@ -455,8 +539,8 @@ export default function PaymentPage() {
                       className="w-56"
                       onCloseAutoFocus={(e) => e.preventDefault()}
                     >
-                      {monthlyStatus
-                        .filter((monthStatus) => !monthStatus.isPaid) // Only show unpaid months
+                      {generateMonthlyPaymentStatus(parseInt(newPaymentForm.year))
+                        .filter((monthStatus) => !monthStatus.isPaid) // Only show unpaid months for the selected year in form
                         .map((monthStatus) => {
                           const monthValue = monthStatus.monthNumber.toString();
                           const isChecked =
@@ -496,9 +580,13 @@ export default function PaymentPage() {
                   <Label htmlFor="year">Tahun</Label>
                   <Select
                     value={newPaymentForm.year}
-                    onValueChange={(value) =>
-                      setNewPaymentForm({ ...newPaymentForm, year: value })
-                    }
+                    onValueChange={(value) => {
+                      // Clear selected months when year changes
+                      setNewPaymentForm({ 
+                        months: [], 
+                        year: value 
+                      });
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih tahun" />
@@ -509,6 +597,8 @@ export default function PaymentPage() {
                       <SelectItem value="2025">2025</SelectItem>
                       <SelectItem value="2026">2026</SelectItem>
                       <SelectItem value="2027">2027</SelectItem>
+                      <SelectItem value="2028">2028</SelectItem>
+                      <SelectItem value="2029">2029</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -576,7 +666,7 @@ export default function PaymentPage() {
       </div>
 
       {/* Monthly Payment Status */}
-      <Card>
+      <Card key={`payment-status-${selectedYear}`}>
         <CardHeader className="pb-4">
           <div className="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0">
             <CardTitle className="flex items-center text-lg">
@@ -617,7 +707,7 @@ export default function PaymentPage() {
               <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
                 {monthlyStatus.map((status) => (
                   <div
-                    key={status.monthNumber}
+                    key={`${status.monthNumber}-${selectedYear}`}
                     className={`p-3 rounded-lg border-2 transition-colors ${
                       status.isPaid
                         ? "border-green-200 bg-green-50"
@@ -670,7 +760,7 @@ export default function PaymentPage() {
       </Card>
 
       {/* Payment History */}
-      <Card>
+      <Card key={`payment-history-${selectedYear}`}>
         <CardHeader className="pb-4">
           <CardTitle className="text-lg">Riwayat Pembayaran</CardTitle>
         </CardHeader>
