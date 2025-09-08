@@ -26,7 +26,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -53,9 +52,11 @@ import {
   Upload,
   FileText,
   ChevronDown,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { toast } from "sonner";
 
 const PAYMENT_METHODS = [
   { value: "bank_transfer", label: "Transfer Bank", icon: Building },
@@ -95,7 +96,6 @@ export default function PaymentPage() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [isNewPaymentDialogOpen, setIsNewPaymentDialogOpen] = useState(false);
   const [payingPayment, setPayingPayment] = useState<Payment | null>(null);
-  const [message, setMessage] = useState("");
 
   // Form states for payment
   const [paymentForm, setPaymentForm] = useState({
@@ -116,6 +116,9 @@ export default function PaymentPage() {
   // Year filter for payment status
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
+  // Loading state for payment creation
+  const [isCreatingPayment, setIsCreatingPayment] = useState(false);
+
   // Fetch payment records when component mounts or year changes
   useEffect(() => {
     if (user?.id) {
@@ -125,7 +128,7 @@ export default function PaymentPage() {
         "year:",
         selectedYear
       );
-      
+
       // Fetch payment records from payment_records table
       fetchPaymentRecords({
         userId: user.id,
@@ -166,7 +169,7 @@ export default function PaymentPage() {
 
     // Validation
     if (!paymentForm.paymentMethod) {
-      setMessage("Pilih metode pembayaran");
+      toast.error("Pilih metode pembayaran");
       return;
     }
 
@@ -174,7 +177,7 @@ export default function PaymentPage() {
       paymentForm.paymentMethod === "bank_transfer" &&
       (!paymentForm.accountNumber || !paymentForm.accountName)
     ) {
-      setMessage("Nomor rekening dan nama pemilik harus diisi");
+      toast.error("Nomor rekening dan nama pemilik harus diisi");
       return;
     }
 
@@ -182,7 +185,7 @@ export default function PaymentPage() {
       paymentForm.paymentMethod === "e_wallet" &&
       !paymentForm.accountNumber
     ) {
-      setMessage("Nomor e-wallet harus diisi");
+      toast.error("Nomor e-wallet harus diisi");
       return;
     }
 
@@ -195,35 +198,34 @@ export default function PaymentPage() {
       )
     );
 
-    setMessage(
+    toast.success(
       "Pembayaran berhasil diproses! Bukti pembayaran telah diterima."
     );
     setIsPaymentDialogOpen(false);
     setPayingPayment(null);
     resetPaymentForm();
-
-    // Clear message after 5 seconds
-    setTimeout(() => setMessage(""), 5000);
   };
 
   const createNewPayment = async () => {
     // Validation
     if (!newPaymentForm.months || newPaymentForm.months.length === 0) {
-      setMessage("Pilih minimal satu bulan");
+      toast.error("Pilih minimal satu bulan");
       return;
     }
 
     if (!newPaymentForm.year) {
-      setMessage("Pilih tahun");
+      toast.error("Pilih tahun");
       return;
     }
 
+    setIsCreatingPayment(true);
+
     try {
       // Call payment gateway API
-      const response = await fetch('/api/payment-gateway', {
-        method: 'POST',
+      const response = await fetch("/api/payment-gateway", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           months: newPaymentForm.months,
@@ -233,22 +235,28 @@ export default function PaymentPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create payment');
+        throw new Error(errorData.error || "Failed to create payment");
       }
 
       const paymentData = await response.json();
 
       // Redirect to payment URL
       if (paymentData.payment_url) {
-        window.open("https://" + paymentData.payment_url, '_blank');
-        setMessage(`Link pembayaran berhasil dibuat! Total: Rp ${paymentData.amount.toLocaleString('id-ID')}`);
+        window.open("https://" + paymentData.payment_url, "_blank");
+        toast.success(
+          `Link pembayaran berhasil dibuat! Total: Rp ${paymentData.amount.toLocaleString(
+            "id-ID"
+          )}`
+        );
       } else {
-        setMessage('Pembayaran berhasil dibuat tetapi tidak ada link pembayaran');
+        toast.success(
+          "Pembayaran berhasil dibuat tetapi tidak ada link pembayaran"
+        );
       }
 
       setIsNewPaymentDialogOpen(false);
       resetNewPaymentForm();
-      
+
       // Refresh payment records and financial records to show the new data
       if (fetchPaymentRecords) {
         fetchPaymentRecords({
@@ -264,12 +272,13 @@ export default function PaymentPage() {
           show_all_status: "true",
         });
       }
-
-      setTimeout(() => setMessage(""), 10000);
     } catch (error) {
-      console.error('Error creating payment:', error);
-      setMessage(error instanceof Error ? error.message : 'Gagal membuat pembayaran');
-      setTimeout(() => setMessage(""), 5000);
+      console.error("Error creating payment:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Gagal membuat pembayaran"
+      );
+    } finally {
+      setIsCreatingPayment(false);
     }
   };
 
@@ -296,7 +305,7 @@ export default function PaymentPage() {
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         // 5MB limit
-        setMessage("Ukuran file maksimal 5MB");
+        toast.error("Ukuran file maksimal 5MB");
         return;
       }
       setPaymentForm({ ...paymentForm, proofFile: file });
@@ -317,7 +326,7 @@ export default function PaymentPage() {
       const isPaid = monthPaymentRecords.length > 0;
 
       // Calculate amount - use settings monthly fee amount if paid
-      const amount = isPaid ? (settings?.monthly_fee?.amount || 150000) : 0;
+      const amount = isPaid ? settings?.monthly_fee?.amount || 150000 : 0;
 
       return {
         month,
@@ -337,14 +346,27 @@ export default function PaymentPage() {
 
     // Add financial records as Payment objects
     if (financialRecords) {
-      const backendPayments: Payment[] = financialRecords.map((record) => ({
+      const backendPayments: Payment[] = financialRecords.map((record) => {
+        // Handle timezone properly - if date doesn't have timezone info, treat as local time
+        const dateStr = record.created_at;
+        let paymentDate: Date;
+        
+        if (dateStr.includes('T')) {
+          // If it already has time info, use as is
+          paymentDate = new Date(dateStr);
+        } else {
+          // If it's just a date, treat as local date at noon to avoid timezone issues
+          paymentDate = new Date(dateStr + 'T12:00:00');
+        }
+
+        return {
         id: `financial_${record.id}`,
         houseBlock: record.house_block || user.houseNumber,
-        paymentDate: new Date(record.date),
+        paymentDate,
         amount: Number(record.amount),
         description:
           record.description ||
-          `${record.category} - ${format(new Date(record.date), "MMM yyyy", {
+          `${record.category} - ${format(paymentDate, "MMM yyyy", {
             locale: id,
           })}`,
         status:
@@ -357,7 +379,8 @@ export default function PaymentPage() {
         type: record.type,
         category: record.category,
         payment_url: record.payment_url, // Include payment URL from financial records
-      }));
+      };
+      });
 
       combinedPayments.push(...backendPayments);
     }
@@ -435,37 +458,37 @@ export default function PaymentPage() {
                       {monthlyStatus
                         .filter((monthStatus) => !monthStatus.isPaid) // Only show unpaid months
                         .map((monthStatus) => {
-                        const monthValue = monthStatus.monthNumber.toString();
-                        const isChecked =
-                          newPaymentForm.months.includes(monthValue);
-                        return (
-                          <DropdownMenuCheckboxItem
-                            key={monthStatus.monthNumber}
-                            checked={isChecked}
-                            onSelect={(e) => e.preventDefault()}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setNewPaymentForm({
-                                  ...newPaymentForm,
-                                  months: [
-                                    ...newPaymentForm.months,
-                                    monthValue,
-                                  ].sort((a, b) => parseInt(a) - parseInt(b)),
-                                });
-                              } else {
-                                setNewPaymentForm({
-                                  ...newPaymentForm,
-                                  months: newPaymentForm.months.filter(
-                                    (m) => m !== monthValue
-                                  ),
-                                });
-                              }
-                            }}
-                          >
-                            {monthStatus.month}
-                          </DropdownMenuCheckboxItem>
-                        );
-                      })}
+                          const monthValue = monthStatus.monthNumber.toString();
+                          const isChecked =
+                            newPaymentForm.months.includes(monthValue);
+                          return (
+                            <DropdownMenuCheckboxItem
+                              key={monthStatus.monthNumber}
+                              checked={isChecked}
+                              onSelect={(e) => e.preventDefault()}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setNewPaymentForm({
+                                    ...newPaymentForm,
+                                    months: [
+                                      ...newPaymentForm.months,
+                                      monthValue,
+                                    ].sort((a, b) => parseInt(a) - parseInt(b)),
+                                  });
+                                } else {
+                                  setNewPaymentForm({
+                                    ...newPaymentForm,
+                                    months: newPaymentForm.months.filter(
+                                      (m) => m !== monthValue
+                                    ),
+                                  });
+                                }
+                              }}
+                            >
+                              {monthStatus.month}
+                            </DropdownMenuCheckboxItem>
+                          );
+                        })}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -532,24 +555,25 @@ export default function PaymentPage() {
                   variant="outline"
                   onClick={() => setIsNewPaymentDialogOpen(false)}
                   className="w-full md:w-auto"
+                  disabled={isCreatingPayment}
                 >
                   Batal
                 </Button>
-                <Button onClick={createNewPayment} className="w-full md:w-auto">
-                  Bayar
+                <Button
+                  onClick={createNewPayment}
+                  className="w-full md:w-auto"
+                  disabled={isCreatingPayment}
+                >
+                  {isCreatingPayment && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {isCreatingPayment ? "Memproses..." : "Bayar"}
                 </Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
       </div>
-
-      {message && (
-        <Alert>
-          <CheckCircle className="h-4 w-4" />
-          <AlertDescription>{message}</AlertDescription>
-        </Alert>
-      )}
 
       {/* Monthly Payment Status */}
       <Card>
@@ -672,7 +696,7 @@ export default function PaymentPage() {
                       <div>
                         <p className="font-medium">{payment.description}</p>
                         <p className="text-sm text-muted-foreground">
-                          {format(payment.paymentDate, "dd MMM yyyy", {
+                          {format(payment.paymentDate, "dd MMM yyyy HH:mm", {
                             locale: id,
                           })}
                         </p>
@@ -715,7 +739,7 @@ export default function PaymentPage() {
                   </div>
                 ))}
               </div>
-
+              
               {/* Desktop Table Layout */}
               <div className="hidden md:block">
                 <Table>
@@ -732,7 +756,7 @@ export default function PaymentPage() {
                     {combinedPaymentHistory.map((payment) => (
                       <TableRow key={payment.id}>
                         <TableCell>
-                          {format(payment.paymentDate, "dd MMM yyyy", {
+                          {format(payment.paymentDate, "dd MMM yyyy HH:mm", {
                             locale: id,
                           })}
                         </TableCell>
@@ -1099,13 +1123,13 @@ export default function PaymentPage() {
                 </Button>
               </div>
 
-              <Alert>
-                <AlertDescription>
+              <div className="p-3 bg-muted/50 border rounded-lg">
+                <p className="text-sm text-muted-foreground">
                   Setelah mengirim bukti pembayaran, status akan berubah menjadi
                   &quot;Sedang Diverifikasi&quot; dan akan dikonfirmasi oleh
                   admin dalam 1x24 jam.
-                </AlertDescription>
-              </Alert>
+                </p>
+              </div>
             </div>
           )}
         </DialogContent>

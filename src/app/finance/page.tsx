@@ -14,6 +14,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationEllipsis, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from '@/components/ui/pagination';
+import { 
   TrendingUp, 
   TrendingDown, 
   Plus, 
@@ -95,6 +104,10 @@ export default function FinancePage() {
   const [selectedYear, setSelectedYear] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
+  
   // UI states
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewingProof, setViewingProof] = useState<string | null>(null);
@@ -126,8 +139,52 @@ export default function FinancePage() {
       if (selectedType !== 'all') filters.type = selectedType;
       
       fetchRecords(filters);
+      setCurrentPage(1); // Reset to first page when filters change
     }
   }, [selectedMonth, selectedYear, selectedType, isAdmin, fetchRecords]);
+
+  // Calculate pagination data
+  const totalRecords = records.length;
+  const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentRecords = records.slice(startIndex, endIndex);
+
+  // Generate page numbers for pagination
+  const generatePageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('ellipsis');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('ellipsis');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push('ellipsis');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('ellipsis');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
 
   // Cleanup preview URL when component unmounts
   useEffect(() => {
@@ -718,7 +775,7 @@ export default function FinancePage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {records.map((record) => (
+                    {currentRecords.map((record) => (
                       <TableRow key={record.id}>
                         <TableCell className="font-medium">
                           {record.house_block || record.user?.house_number || '-'}
@@ -737,7 +794,7 @@ export default function FinancePage() {
                         </TableCell>
                         <TableCell>{record.category}</TableCell>
                         <TableCell>
-                          {format(new Date(record.date), 'dd MMM yyyy', { locale: id })}
+                          {format(new Date(record.created_at), 'dd MMM yyyy HH:mm', { locale: id })}
                         </TableCell>
                         <TableCell className={`font-semibold ${
                           record.type === 'income' ? 'text-green-600' : 'text-red-600'
@@ -781,6 +838,65 @@ export default function FinancePage() {
                   </TableBody>
                 </Table>
               </div>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-4">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage > 1) {
+                              setCurrentPage(currentPage - 1);
+                            }
+                          }}
+                          className={currentPage <= 1 ? 'pointer-events-none opacity-50' : ''}
+                        />
+                      </PaginationItem>
+                      
+                      {generatePageNumbers().map((page, index) => (
+                        <PaginationItem key={index}>
+                          {page === 'ellipsis' ? (
+                            <PaginationEllipsis />
+                          ) : (
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setCurrentPage(page as number);
+                              }}
+                              isActive={currentPage === page}
+                            >
+                              {page}
+                            </PaginationLink>
+                          )}
+                        </PaginationItem>
+                      ))}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage < totalPages) {
+                              setCurrentPage(currentPage + 1);
+                            }
+                          }}
+                          className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : ''}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                  
+                  {/* Pagination info */}
+                  <div className="text-sm text-muted-foreground mt-2 text-center">
+                    Menampilkan {Math.min(startIndex + 1, totalRecords)} - {Math.min(endIndex, totalRecords)} dari {totalRecords} transaksi
+                  </div>
+                </div>
+              )}
             </>
           )}
         </CardContent>
@@ -868,7 +984,7 @@ export default function FinancePage() {
                 <div>
                   <Label className="text-sm font-medium">Tanggal</Label>
                   <p className="mt-1 font-medium">
-                    {format(new Date(viewingTransaction.date), 'dd MMMM yyyy', { locale: id })}
+                    {format(new Date(viewingTransaction.created_at), 'dd MMMM yyyy HH:mm', { locale: id })}
                   </p>
                 </div>
                 <div>
@@ -890,7 +1006,7 @@ export default function FinancePage() {
                 <Label className="text-sm font-medium">Dibuat Oleh</Label>
                 <p className="mt-1 text-sm">
                   {viewingTransaction.created_by_user?.name || 'System'} pada{' '}
-                  {format(new Date(viewingTransaction.created_at), 'dd MMM yyyy HH:mm', { locale: id })}
+                  {format(new Date(viewingTransaction.created_at), 'dd MMM yyyy HH:mm:ss', { locale: id })}
                 </p>
               </div>
               

@@ -39,7 +39,7 @@ export default function RootLayout({
         >
           <CustomAuthProvider>
             <Navigation />
-            <main className="container mx-auto px-3 md:px-4 py-4 md:py-6">
+            <main className="container mx-auto px-3 md:px-4 py-4 md:py-6 pt-20 md:pt-24">
               {children}
             </main>
             <Toaster />

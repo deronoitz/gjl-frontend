@@ -93,7 +93,7 @@ export default function Navigation() {
 
   return (
     <>
-      <nav className="bg-white shadow-sm border-b relative z-50">
+      <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md shadow-md border-b border-white/20 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-8">
@@ -224,10 +224,10 @@ export default function Navigation() {
 
           {/* Mobile Navigation Menu */}
           {isMobileMenuOpen && (
-            <div className="md:hidden border-t">
-              <div className="px-2 pt-2 pb-3 space-y-1 bg-gray-50">
+            <div className="md:hidden border-t bg-white/95 backdrop-blur-md">
+              <div className="px-2 pt-2 pb-3 space-y-1">
                 {/* User Info in Mobile */}
-                <div className="flex items-center justify-between px-3 py-3 bg-white rounded-md mb-3 shadow-sm">
+                <div className="flex items-center justify-between px-3 py-3 bg-white/90 backdrop-blur-sm rounded-md mb-3 shadow-sm border border-white/30">
                   <div className="flex items-center space-x-3">
                     <Avatar className="h-10 w-10">
                       <AvatarFallback>
@@ -259,8 +259,8 @@ export default function Navigation() {
                             onClick={() => toggleMobileDropdown(item.name)}
                             className={`flex items-center justify-between w-full px-3 py-3 rounded-md text-sm font-medium transition-colors ${
                               isActiveParent(item.subItems)
-                                ? 'bg-emerald-100 text-emerald-900 border-l-4 border-emerald-500'
-                                : 'text-gray-700 hover:text-gray-900 hover:bg-white'
+                                ? 'bg-emerald-100/80 text-emerald-900 border-l-4 border-emerald-500'
+                                : 'text-gray-700 hover:text-gray-900 hover:bg-white/70'
                             }`}
                           >
                             <div className="flex items-center">
@@ -283,8 +283,8 @@ export default function Navigation() {
                                     href={subItem.href}
                                     className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                                       pathname === subItem.href
-                                        ? 'bg-emerald-100 text-emerald-900 border-l-4 border-emerald-500'
-                                        : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                                        ? 'bg-emerald-100/80 text-emerald-900 border-l-4 border-emerald-500'
+                                        : 'text-gray-600 hover:text-gray-900 hover:bg-white/70'
                                     }`}
                                     onClick={() => setIsMobileMenuOpen(false)}
                                   >
@@ -305,8 +305,8 @@ export default function Navigation() {
                           href={item.href!}
                           className={`flex items-center px-3 py-3 rounded-md text-sm font-medium transition-colors ${
                             pathname === item.href
-                              ? 'bg-emerald-100 text-emerald-900 border-l-4 border-emerald-500'
-                              : 'text-gray-700 hover:text-gray-900 hover:bg-white'
+                              ? 'bg-emerald-100/80 text-emerald-900 border-l-4 border-emerald-500'
+                              : 'text-gray-700 hover:text-gray-900 hover:bg-white/70'
                           }`}
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
@@ -325,7 +325,7 @@ export default function Navigation() {
                       setIsChangePasswordOpen(true);
                       setIsMobileMenuOpen(false);
                     }}
-                    className="flex items-center w-full px-3 py-3 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-white transition-colors"
+                    className="flex items-center w-full px-3 py-3 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-white/70 transition-colors"
                   >
                     <Lock className="mr-3 h-5 w-5" />
                     Ganti Password
@@ -334,7 +334,7 @@ export default function Navigation() {
                     <Link
                       href="/admin/settings"
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center w-full px-3 py-3 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-white transition-colors"
+                      className="flex items-center w-full px-3 py-3 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-white/70 transition-colors"
                     >
                       <Settings className="mr-3 h-5 w-5" />
                       Settings
@@ -365,7 +365,7 @@ export default function Navigation() {
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-25 z-40 md:hidden"
+          className="fixed inset-0 bg-black/25 backdrop-blur-sm z-40 md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
