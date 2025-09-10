@@ -469,7 +469,6 @@ export default function FinancePage() {
                     <Input
                       id="amount"
                       type="number"
-                      step="1000"
                       min="0"
                       value={formData.amount}
                       onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
