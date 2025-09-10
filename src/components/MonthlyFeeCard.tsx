@@ -36,7 +36,7 @@ export default function MonthlyFeeCard() {
         <CardTitle className="text-sm font-medium text-emerald-800">Iuran Bulanan</CardTitle>
         <DollarSign className="h-4 w-4 text-emerald-600" />
       </CardHeader>
-      <CardContent className="pt-4 pb-4">
+      <CardContent className="pt-0 pb-0">
         <div className="text-xl md:text-2xl font-bold text-emerald-700 mb-1">
           {formatCurrency(settings.monthly_fee.amount)}
         </div>

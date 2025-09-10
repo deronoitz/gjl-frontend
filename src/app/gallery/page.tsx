@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerFooter } from '@/components/ui/drawer';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Calendar, Image as ImageIcon, Edit, Trash2, Upload, ExternalLink, FolderOpen, Loader2, Camera } from 'lucide-react';
+import { Plus, Calendar, Image as ImageIcon, Edit, Trash2, Upload, ExternalLink, FolderOpen, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import Image from 'next/image';
@@ -182,7 +182,6 @@ export default function GalleryPage() {
         <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
           <div className="space-y-1">
             <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight flex items-center gap-2 md:gap-3">
-              <Camera className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-purple-600" />
               Galeri Album
             </h1>
             <p className="text-sm md:text-base lg:text-lg text-muted-foreground">
@@ -197,7 +196,7 @@ export default function GalleryPage() {
                 if (!open) resetDialog();
               }}>
                 <DrawerTrigger asChild>
-                  <Button className="w-full md:w-auto">
+                  <Button className="w-full md:w-auto" size="lg">
                     <Plus className="h-4 w-4 mr-2" />
                     Tambah Album
                   </Button>
@@ -297,7 +296,7 @@ export default function GalleryPage() {
                 if (!open) resetDialog();
               }}>
                 <DialogTrigger asChild>
-                  <Button className="w-full md:w-auto">
+                  <Button className="w-full md:w-auto" size="lg">
                     <Plus className="h-4 w-4 mr-2" />
                     Tambah Album
                   </Button>
@@ -441,7 +440,7 @@ export default function GalleryPage() {
           </div>
           
           {/* Tablet-Optimized Grid */}
-          <div className="grid gap-3 sm:gap-4 md:gap-5 lg:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid gap-3 sm:gap-4 md:gap-5 lg:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {albums.map((album) => (
               <Card key={album.id} className="overflow-hidden">
                 <div className="aspect-video relative bg-gray-100 overflow-hidden">
@@ -458,7 +457,7 @@ export default function GalleryPage() {
                   />
                 </div>
                 
-                <CardHeader className="pb-2 px-3 md:px-4 pt-3 md:pt-4">
+                <CardHeader className="px-3 md:px-4 pt-0 md:pt-0 pb-0">
                   <div className="space-y-2">
                     <CardTitle className="text-sm md:text-base lg:text-lg leading-tight line-clamp-2">
                       {album.title}
@@ -470,7 +469,7 @@ export default function GalleryPage() {
                   </div>
                 </CardHeader>
                 
-                <CardContent className="pt-0 px-3 md:px-4 pb-3 md:pb-4">
+                <CardContent className="pt-0 px-3 md:px-4 pb-3 md:pb-0">
                   <div className="space-y-2">
                     <Button
                       size="sm"

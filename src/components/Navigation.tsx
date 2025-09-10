@@ -104,7 +104,7 @@ export default function Navigation() {
               </Link>
               
               {/* Desktop Navigation - Tablet optimized */}
-              <div className="hidden md:flex space-x-2 lg:space-x-4">
+              <div className="hidden md:flex space-x-2 lg:space-x-2">
                 {navItems.map((item) => {
                   if (item.subItems) {
                     // Render dropdown for items with sub-items
@@ -148,7 +148,7 @@ export default function Navigation() {
                       <Link
                         key={item.href}
                         href={item.href!}
-                        className={`px-2 md:px-3 lg:px-4 py-2 rounded-md text-xs md:text-sm lg:text-base font-medium ${
+                        className={`px-2 md:px-3 lg:px-4 py-2 rounded-md text-xs md:text-sm font-medium ${
                           pathname === item.href
                             ? 'bg-emerald-100 text-emerald-900'
                             : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -168,7 +168,7 @@ export default function Navigation() {
                 <Badge variant={isAdmin ? 'destructive' : 'secondary'} className="text-xs md:text-sm">
                   {isAdmin ? 'Admin' : 'User'}
                 </Badge>
-                <span className="text-xs md:text-sm lg:text-base font-medium">
+                <span className="text-xs md:text-sm font-medium">
                   <span className="lg:hidden">{user.name.split(' ')[0]}</span>
                   <span className="hidden lg:inline">{user.name}</span>
                 </span>

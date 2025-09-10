@@ -139,7 +139,6 @@ export default function AdminAnnouncementsPage() {
         <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
           <div className="space-y-1">
             <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight flex items-center gap-2 md:gap-3">
-              <Megaphone className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-blue-600" />
               Kelola Pengumuman
             </h1>
             <p className="text-sm md:text-base lg:text-lg text-muted-foreground">
@@ -346,9 +345,7 @@ export default function AdminAnnouncementsPage() {
             </div>
             
             {announcements.map((announcement, index) => (
-              <Card key={announcement.id} className={`overflow-hidden hover:shadow-md transition-shadow ${
-                index === 0 ? 'border-blue-300 bg-blue-50/30' : 'border-gray-200'
-              }`}>
+              <Card key={announcement.id} className={`overflow-hidden hover:shadow-md transition-shadow`}>
                 {/* Tablet-optimized header */}
                 <CardHeader className="pb-2 md:pb-3">
                   <div className="space-y-2 md:space-y-3">
