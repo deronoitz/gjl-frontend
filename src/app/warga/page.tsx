@@ -141,11 +141,11 @@ export default function WargaPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <div className="flex space-x-4 md:space-x-6 lg:space-x-8 md:col-span-2">
+              <div className="flex space-x-2 md:space-x-6 lg:space-x-8 md:col-span-2">
                 {/* Sort By */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <label className="text-sm font-medium">
-                    Urutkan Berdasarkan
+                    Urutkan dari
                   </label>
                   <Select value={sortBy} onValueChange={setSortBy}>
                     <SelectTrigger>
@@ -160,8 +160,8 @@ export default function WargaPage() {
                 </div>
 
                 {/* Filter by Position */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Filter Jabatan</label>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Jabatan</label>
                   <Select
                     value={filterByPosition}
                     onValueChange={setFilterByPosition}
