@@ -1240,157 +1240,352 @@ export default function FinancePage() {
         </CardContent>
       </Card>
 
-      {/* Image Viewer Modal */}
+      {/* Image Viewer Modal/Drawer */}
       {viewingProof && (
-        <Dialog open={!!viewingProof} onOpenChange={() => setViewingProof(null)}>
-          <DialogContent className="max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Bukti Pembayaran</DialogTitle>
-            </DialogHeader>
-            <div className="mt-4 pb-4">
-              {viewingProof.toLowerCase().includes('.pdf') ? (
-                <div className="text-center py-8">
-                  <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                  <p className="mb-4">File PDF tidak dapat ditampilkan di sini</p>
-                  <Button onClick={() => window.open(viewingProof, '_blank')}>
-                    Buka dalam Tab Baru
-                  </Button>
-                </div>
-              ) : (
-                <div className="relative max-h-96 overflow-hidden rounded-lg">
-                  <Image
-                    src={viewingProof}
-                    alt="Bukti Pembayaran"
-                    width={800}
-                    height={600}
-                    className="w-full h-auto object-contain"
-                    unoptimized
-                  />
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Transaction Detail Modal */}
-      {viewingTransaction && (
-        <Dialog open={!!viewingTransaction} onOpenChange={() => setViewingTransaction(null)}>
-          <DialogContent className="max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-lg">Detail Transaksi</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pb-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">Blok Rumah</Label>
-                  <p className="mt-1 font-medium">
-                    {viewingTransaction.house_block || viewingTransaction.user?.house_number || '-'}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Tipe Transaksi</Label>
-                  <div className="mt-1">
-                    <Badge 
-                      variant={viewingTransaction.type === 'income' ? 'default' : 'destructive'}
-                      className={viewingTransaction.type === 'income' ? 'bg-green-100 text-green-800' : ''}
-                    >
-                      {viewingTransaction.type === 'income' ? (
-                        <><TrendingUp className="h-3 w-3 mr-1" />Pemasukan</>
-                      ) : (
-                        <><TrendingDown className="h-3 w-3 mr-1" />Pengeluaran</>
-                      )}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">Kategori</Label>
-                  <p className="mt-1 font-medium">{viewingTransaction.category}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Status</Label>
-                  <div className="mt-1">
-                    <Badge variant="default" className="bg-green-100 text-green-800">Selesai</Badge>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">Tanggal</Label>
-                  <p className="mt-1 font-medium">
-                    {format(new Date(viewingTransaction.created_at), 'dd MMMM yyyy HH:mm', { locale: id })}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Jumlah</Label>
-                  <p className={`mt-1 font-bold text-lg ${
-                    viewingTransaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {viewingTransaction.type === 'income' ? '+' : '-'}Rp {viewingTransaction.amount.toLocaleString('id-ID')}
-                  </p>
-                </div>
-              </div>
-              
-              <div>
-                <Label className="text-sm font-medium">Keterangan</Label>
-                <p className="mt-1 text-sm bg-muted p-3 rounded-md">{viewingTransaction.description}</p>
-              </div>
-              
-              <div>
-                <Label className="text-sm font-medium">Dibuat Oleh</Label>
-                <p className="mt-1 text-sm">
-                  {viewingTransaction.created_by_user?.name || 'System'} pada{' '}
-                  {format(new Date(viewingTransaction.created_at), 'dd MMM yyyy HH:mm:ss', { locale: id })}
-                </p>
-              </div>
-              
-              {viewingTransaction.proof_url && (
-                <div>
-                  <Label className="text-sm font-medium">Bukti Pembayaran</Label>
-                  <div className="mt-2 space-y-2">
-                    {viewingTransaction.proof_url.toLowerCase().includes('.pdf') ? (
-                      <div className="p-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg text-center">
-                        <FileText className="h-12 w-12 mx-auto mb-2 text-gray-600" />
-                        <p className="text-sm text-gray-600 mb-2">File bukti pembayaran</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.open(viewingTransaction.proof_url!, '_blank')}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Lihat File
-                        </Button>
+        <>
+          {isMobile ? (
+            <Drawer open={!!viewingProof} onOpenChange={() => setViewingProof(null)}>
+              <DrawerContent className="max-h-[95vh]">
+                <DrawerHeader className="text-left border-b pb-3">
+                  <DrawerTitle className="text-lg font-semibold">Bukti Pembayaran</DrawerTitle>
+                </DrawerHeader>
+                <div className="flex-1 overflow-y-auto px-4 py-4">
+                  {viewingProof.toLowerCase().includes('.pdf') ? (
+                    <div className="text-center py-12">
+                      <div className="mb-6">
+                        <FileText className="h-20 w-20 mx-auto mb-4 text-gray-400" />
+                        <p className="text-gray-600 mb-2 font-medium">File PDF</p>
+                        <p className="text-sm text-gray-500 mb-6">File PDF tidak dapat ditampilkan langsung di aplikasi</p>
                       </div>
-                    ) : (
-                      <div className="aspect-video relative bg-gray-100 rounded overflow-hidden max-h-64">
+                      <Button 
+                        onClick={() => window.open(viewingProof, '_blank')}
+                        className="w-full"
+                        size="lg"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Buka dalam Browser
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="relative bg-gray-50 rounded-lg overflow-hidden">
                         <Image
-                          src={viewingTransaction.proof_url}
+                          src={viewingProof}
                           alt="Bukti Pembayaran"
-                          fill
-                          className="object-contain"
+                          width={400}
+                          height={600}
+                          className="w-full h-auto object-contain max-h-[60vh]"
+                          unoptimized
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.style.display = 'none';
                           }}
                         />
                       </div>
-                    )}
+                      <div className="text-center">
+                        <Button 
+                          variant="outline"
+                          onClick={() => window.open(viewingProof, '_blank')}
+                          className="w-full"
+                          size="lg"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Lihat dalam Ukuran Penuh
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <DrawerFooter className="pt-4 border-t">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setViewingProof(null)} 
+                    className="w-full"
+                    size="lg"
+                  >
+                    Tutup
+                  </Button>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
+          ) : (
+            <Dialog open={!!viewingProof} onOpenChange={() => setViewingProof(null)}>
+              <DialogContent className="max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Bukti Pembayaran</DialogTitle>
+                </DialogHeader>
+                <div className="mt-4 pb-4">
+                  {viewingProof.toLowerCase().includes('.pdf') ? (
+                    <div className="text-center py-8">
+                      <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                      <p className="mb-4">File PDF tidak dapat ditampilkan di sini</p>
+                      <Button onClick={() => window.open(viewingProof, '_blank')}>
+                        Buka dalam Tab Baru
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="relative max-h-96 overflow-hidden rounded-lg">
+                      <Image
+                        src={viewingProof}
+                        alt="Bukti Pembayaran"
+                        width={800}
+                        height={600}
+                        className="w-full h-auto object-contain"
+                        unoptimized
+                      />
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </>
+      )}
+
+      {/* Transaction Detail Modal/Drawer */}
+      {viewingTransaction && (
+        <>
+          {isMobile ? (
+            <Drawer open={!!viewingTransaction} onOpenChange={() => setViewingTransaction(null)}>
+              <DrawerContent className="max-h-[95vh]">
+                <DrawerHeader className="text-left border-b pb-3">
+                  <DrawerTitle className="text-lg font-semibold">Detail Transaksi</DrawerTitle>
+                </DrawerHeader>
+                <div className="flex-1 overflow-y-auto px-4 py-4">
+                  <div className="space-y-6">
+                    {/* Transaction Type & Amount */}
+                    <div className="text-center py-4 bg-muted/30 rounded-lg">
+                      <div className="mb-2">
+                        <Badge 
+                          variant={viewingTransaction.type === 'income' ? 'default' : 'destructive'}
+                          className={`text-sm ${viewingTransaction.type === 'income' ? 'bg-green-100 text-green-800' : ''}`}
+                        >
+                          {viewingTransaction.type === 'income' ? (
+                            <><TrendingUp className="h-4 w-4 mr-1" />Pemasukan</>
+                          ) : (
+                            <><TrendingDown className="h-4 w-4 mr-1" />Pengeluaran</>
+                          )}
+                        </Badge>
+                      </div>
+                      <p className={`text-2xl font-bold ${
+                        viewingTransaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {viewingTransaction.type === 'income' ? '+' : '-'}Rp {viewingTransaction.amount.toLocaleString('id-ID')}
+                      </p>
+                    </div>
+
+                    {/* Transaction Details */}
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Blok Rumah</Label>
+                          <p className="mt-1 font-medium text-sm">
+                            {viewingTransaction.house_block || viewingTransaction.user?.house_number || '-'}
+                          </p>
+                        </div>
+                        <div>
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Status</Label>
+                          <div className="mt-1">
+                            <Badge variant="default" className="bg-green-100 text-green-800 text-xs">Selesai</Badge>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Kategori</Label>
+                        <p className="mt-1 font-medium text-sm">{viewingTransaction.category}</p>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Tanggal</Label>
+                        <p className="mt-1 font-medium text-sm">
+                          {format(new Date(viewingTransaction.created_at), 'dd MMMM yyyy HH:mm', { locale: id })}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Keterangan</Label>
+                        <p className="mt-1 text-sm bg-muted p-3 rounded-md leading-relaxed">
+                          {viewingTransaction.description}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dibuat Oleh</Label>
+                        <p className="mt-1 text-sm">
+                          {viewingTransaction.created_by_user?.name || 'System'} pada{' '}
+                          {format(new Date(viewingTransaction.created_at), 'dd MMM yyyy HH:mm:ss', { locale: id })}
+                        </p>
+                      </div>
+                      
+                      {viewingTransaction.proof_url && (
+                        <div>
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Bukti Pembayaran</Label>
+                          <div className="mt-2">
+                            {viewingTransaction.proof_url.toLowerCase().includes('.pdf') ? (
+                              <div className="p-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                                <FileText className="h-10 w-10 mx-auto mb-2 text-gray-600" />
+                                <p className="text-xs text-gray-600 mb-3">File bukti pembayaran</p>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(viewingTransaction.proof_url!, '_blank')}
+                                  className="text-xs"
+                                >
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  Lihat File
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="aspect-video relative bg-gray-100 rounded-lg overflow-hidden">
+                                <Image
+                                  src={viewingTransaction.proof_url}
+                                  alt="Bukti Pembayaran"
+                                  fill
+                                  className="object-contain"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              )}
-              
-              <div className="flex justify-end">
-                <Button onClick={() => setViewingTransaction(null)} className="w-full md:w-auto">
-                  Tutup
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+                <DrawerFooter className="pt-4 border-t">
+                  <Button 
+                    onClick={() => setViewingTransaction(null)} 
+                    className="w-full"
+                    size="lg"
+                  >
+                    Tutup
+                  </Button>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
+          ) : (
+            <Dialog open={!!viewingTransaction} onOpenChange={() => setViewingTransaction(null)}>
+              <DialogContent className="max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-lg">Detail Transaksi</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium">Blok Rumah</Label>
+                      <p className="mt-1 font-medium">
+                        {viewingTransaction.house_block || viewingTransaction.user?.house_number || '-'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Tipe Transaksi</Label>
+                      <div className="mt-1">
+                        <Badge 
+                          variant={viewingTransaction.type === 'income' ? 'default' : 'destructive'}
+                          className={viewingTransaction.type === 'income' ? 'bg-green-100 text-green-800' : ''}
+                        >
+                          {viewingTransaction.type === 'income' ? (
+                            <><TrendingUp className="h-3 w-3 mr-1" />Pemasukan</>
+                          ) : (
+                            <><TrendingDown className="h-3 w-3 mr-1" />Pengeluaran</>
+                          )}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium">Kategori</Label>
+                      <p className="mt-1 font-medium">{viewingTransaction.category}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Status</Label>
+                      <div className="mt-1">
+                        <Badge variant="default" className="bg-green-100 text-green-800">Selesai</Badge>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium">Tanggal</Label>
+                      <p className="mt-1 font-medium">
+                        {format(new Date(viewingTransaction.created_at), 'dd MMMM yyyy HH:mm', { locale: id })}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Jumlah</Label>
+                      <p className={`mt-1 font-bold text-lg ${
+                        viewingTransaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {viewingTransaction.type === 'income' ? '+' : '-'}Rp {viewingTransaction.amount.toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium">Keterangan</Label>
+                    <p className="mt-1 text-sm bg-muted p-3 rounded-md">{viewingTransaction.description}</p>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium">Dibuat Oleh</Label>
+                    <p className="mt-1 text-sm">
+                      {viewingTransaction.created_by_user?.name || 'System'} pada{' '}
+                      {format(new Date(viewingTransaction.created_at), 'dd MMM yyyy HH:mm:ss', { locale: id })}
+                    </p>
+                  </div>
+                  
+                  {viewingTransaction.proof_url && (
+                    <div>
+                      <Label className="text-sm font-medium">Bukti Pembayaran</Label>
+                      <div className="mt-2 space-y-2">
+                        {viewingTransaction.proof_url.toLowerCase().includes('.pdf') ? (
+                          <div className="p-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                            <FileText className="h-12 w-12 mx-auto mb-2 text-gray-600" />
+                            <p className="text-sm text-gray-600 mb-2">File bukti pembayaran</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(viewingTransaction.proof_url!, '_blank')}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Lihat File
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="aspect-video relative bg-gray-100 rounded overflow-hidden max-h-64">
+                            <Image
+                              src={viewingTransaction.proof_url}
+                              alt="Bukti Pembayaran"
+                              fill
+                              className="object-contain"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-end">
+                    <Button onClick={() => setViewingTransaction(null)} className="w-full md:w-auto">
+                      Tutup
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </>
       )}
     </div>
   );
