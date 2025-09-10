@@ -15,33 +15,36 @@ import { Bell, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 function AnnouncementContent({ content, maxLength = 200 }: { content: string; maxLength?: number }) {
   const [isExpanded, setIsExpanded] = useState(false);
   
-  if (content.length <= maxLength) {
+  // Adjust max length based on screen size
+  const adjustedMaxLength = typeof window !== 'undefined' && window.innerWidth >= 768 ? maxLength + 100 : maxLength;
+  
+  if (content.length <= adjustedMaxLength) {
     return (
-      <p className="text-xs md:text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+      <p className="text-xs md:text-sm lg:text-base text-muted-foreground leading-relaxed whitespace-pre-line">
         {content}
       </p>
     );
   }
   
-  const truncatedContent = content.substring(0, maxLength) + '...';
+  const truncatedContent = content.substring(0, adjustedMaxLength) + '...';
   
   return (
     <div className="space-y-2">
-      <p className="text-xs md:text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+      <p className="text-xs md:text-sm lg:text-base text-muted-foreground leading-relaxed whitespace-pre-line">
         {isExpanded ? content : truncatedContent}
       </p>
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
+        className="flex items-center gap-1 text-xs md:text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
       >
         {isExpanded ? (
           <>
-            <ChevronUp className="h-3 w-3" />
+            <ChevronUp className="h-3 w-3 md:h-4 md:w-4" />
             Lihat lebih sedikit
           </>
         ) : (
           <>
-            <ChevronDown className="h-3 w-3" />
+            <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />
             Lihat selengkapnya
           </>
         )}
@@ -60,29 +63,29 @@ export default function DashboardPage() {
   const latestAnnouncements = announcements.slice(0, 3);
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      {/* Header - Compact for mobile */}
+    <div className="space-y-4 md:space-y-5 lg:space-y-6">
+      {/* Header - Responsive for all devices */}
       <div className="space-y-1">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-sm md:text-base text-muted-foreground">
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-sm md:text-base lg:text-lg text-muted-foreground">
           Selamat datang, {user.name}
         </p>
       </div>
 
-      {/* Info Cards - Single column on mobile, responsive grid */}
-      <div className="grid gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {/* Info Cards - Optimized for tablet portrait/landscape */}
+      <div className="grid gap-3 sm:gap-4 md:gap-5 lg:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <MonthlyFeeCard />
       </div>
 
-      {/* Announcements - More compact on mobile */}
+      {/* Announcements - Optimized for all screen sizes */}
       <Card className="overflow-hidden">
-        <CardHeader className="pb-3 md:pb-6">
-          <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-            <Bell className="h-5 w-5 text-blue-600" />
+        <CardHeader className="pb-3 md:pb-4 lg:pb-6">
+          <CardTitle className="flex items-center gap-2 text-lg md:text-xl lg:text-2xl">
+            <Bell className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
             Pengumuman Terbaru
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 md:space-y-4 px-3 md:px-6">
+        <CardContent className="space-y-3 md:space-y-4 lg:space-y-5 px-3 md:px-5 lg:px-6">
           {announcementsLoading ? (
             <div className="text-center py-6">
               <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
@@ -108,21 +111,21 @@ export default function DashboardPage() {
               {latestAnnouncements.map((announcement, index) => (
                 <div
                   key={announcement.id}
-                  className={`p-3 md:p-4 border rounded-lg space-y-2 transition-all hover:shadow-sm ${
+                  className={`p-3 md:p-4 lg:p-5 border rounded-lg space-y-2 md:space-y-3 transition-all hover:shadow-sm ${
                     index === 0 ? 'border-blue-200 bg-blue-50/50' : 'border-gray-200 bg-white'
                   }`}
                 >
-                  {/* Mobile-optimized header */}
+                  {/* Responsive header */}
                   <div className="space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="font-semibold text-sm md:text-base leading-tight flex-1">
+                    <div className="flex items-start justify-between gap-2 md:gap-3">
+                      <h4 className="font-semibold text-sm md:text-base lg:text-lg leading-tight flex-1">
                         {announcement.title}
                       </h4>
                       <Badge 
                         variant={index === 0 ? "default" : "outline"} 
-                        className="text-xs whitespace-nowrap flex items-center gap-1"
+                        className="text-xs md:text-sm whitespace-nowrap flex items-center gap-1"
                       >
-                        <Calendar className="h-3 w-3" />
+                        <Calendar className="h-3 w-3 md:h-4 md:w-4" />
                         {format(new Date(announcement.createdAt), 'dd MMM', {
                           locale: id,
                         })}
@@ -135,9 +138,9 @@ export default function DashboardPage() {
                       maxLength={150}
                     />
                     
-                    {/* Author - smaller on mobile */}
+                    {/* Author - responsive sizing */}
                     {announcement.authorName && (
-                      <p className="text-xs text-muted-foreground/80">
+                      <p className="text-xs md:text-sm text-muted-foreground/80">
                         oleh {announcement.authorName}
                       </p>
                     )}
@@ -145,10 +148,10 @@ export default function DashboardPage() {
                 </div>
               ))}
               
-              {/* Show more link for mobile */}
+              {/* Show more link - responsive */}
               {announcements.length > 3 && (
-                <div className="text-center pt-2">
-                  <button className="text-xs md:text-sm text-blue-600 hover:text-blue-700 font-medium">
+                <div className="text-center pt-2 md:pt-3">
+                  <button className="text-xs md:text-sm lg:text-base text-blue-600 hover:text-blue-700 font-medium transition-colors">
                     Lihat semua pengumuman ({announcements.length})
                   </button>
                 </div>

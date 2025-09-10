@@ -131,4 +131,32 @@
     -webkit-line-clamp: none;
     line-clamp: none;
   }
+
+  /* Tablet optimization utilities */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .tablet-optimized {
+      /* Tablet portrait specific optimizations */
+      padding: 1rem 1.5rem;
+    }
+    
+    .tablet-card-spacing {
+      gap: 1.25rem;
+    }
+    
+    .tablet-text-balance {
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+  }
+  
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .tablet-landscape-optimized {
+      /* Tablet landscape specific optimizations */
+      padding: 1.25rem 2rem;
+    }
+    
+    .tablet-landscape-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
 }

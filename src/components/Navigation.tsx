@@ -14,7 +14,7 @@ import ChangePasswordDialog from '@/components/ChangePasswordDialog';
 import ChangePhoneDialog from '@/components/ChangePhoneDialog';
 
 const navigationItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'Home', href: '/dashboard', icon: Home },
   { 
     name: 'Keuangan', 
     icon: DollarSign,
@@ -35,7 +35,7 @@ const navigationItems = [
 ];
 
 const adminNavItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'Home', href: '/dashboard', icon: Home },
   { 
     name: 'Keuangan', 
     icon: DollarSign,
@@ -96,15 +96,15 @@ export default function Navigation() {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 bg-white backdrop-blur-md shadow-md border-b border-white/20 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center space-x-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex justify-between h-14 md:h-16 lg:h-18">
+            <div className="flex items-center space-x-4 md:space-x-6 lg:space-x-8">
               <Link href="/dashboard" className="flex items-center space-x-2">
-                <Image src="/gjl-logo.png" alt="GJL Logo" className="w-24" width={200} height={200}/>
+                <Image src="/gjl-logo.png" alt="GJL Logo" className="w-20 md:w-24 lg:w-28" width={200} height={200}/>
               </Link>
               
-              {/* Desktop Navigation */}
-              <div className="hidden md:flex space-x-4">
+              {/* Desktop Navigation - Tablet optimized */}
+              <div className="hidden md:flex space-x-2 lg:space-x-4">
                 {navItems.map((item) => {
                   if (item.subItems) {
                     // Render dropdown for items with sub-items
@@ -113,14 +113,14 @@ export default function Navigation() {
                         <DropdownMenuTrigger asChild>
                           <Button 
                             variant="ghost" 
-                            className={`px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1 ${
+                            className={`px-2 md:px-3 lg:px-4 py-2 rounded-md text-xs md:text-sm lg:text-base font-medium flex items-center space-x-1 ${
                               isActiveParent(item.subItems)
                                 ? 'bg-emerald-100 text-emerald-900'
                                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                             }`}
                           >
                             <span>{item.name}</span>
-                            <ChevronDown className="h-4 w-4" />
+                            <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
@@ -134,7 +134,7 @@ export default function Navigation() {
                                     : ''
                                 }`}
                               >
-                                <subItem.icon className="h-4 w-4" />
+                                <subItem.icon className="h-4 w-4 md:h-5 md:w-5" />
                                 <span>{subItem.name}</span>
                               </Link>
                             </DropdownMenuItem>
@@ -148,7 +148,7 @@ export default function Navigation() {
                       <Link
                         key={item.href}
                         href={item.href!}
-                        className={`px-3 py-2 rounded-md text-sm font-medium ${
+                        className={`px-2 md:px-3 lg:px-4 py-2 rounded-md text-xs md:text-sm lg:text-base font-medium ${
                           pathname === item.href
                             ? 'bg-emerald-100 text-emerald-900'
                             : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -162,13 +162,16 @@ export default function Navigation() {
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 md:space-x-3 lg:space-x-4">
               {/* Desktop User Info */}
               <div className="hidden md:flex items-center space-x-2">
-                <Badge variant={isAdmin ? 'destructive' : 'secondary'}>
+                <Badge variant={isAdmin ? 'destructive' : 'secondary'} className="text-xs md:text-sm">
                   {isAdmin ? 'Admin' : 'User'}
                 </Badge>
-                <span className="text-sm font-medium">{user.name}</span>
+                <span className="text-xs md:text-sm lg:text-base font-medium">
+                  <span className="lg:hidden">{user.name.split(' ')[0]}</span>
+                  <span className="hidden lg:inline">{user.name}</span>
+                </span>
               </div>
               
               {/* Mobile menu button */}
@@ -177,13 +180,13 @@ export default function Navigation() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className="h-8 w-8"
+                  className="h-9 w-9 md:h-10 md:w-10"
                   aria-label={isMobileMenuOpen ? 'Tutup menu' : 'Buka menu'}
                 >
                   {isMobileMenuOpen ? (
-                    <X className="h-5 w-5" />
+                    <X className="h-5 w-5 md:h-6 md:w-6" />
                   ) : (
-                    <Menu className="h-5 w-5" />
+                    <Menu className="h-5 w-5 md:h-6 md:w-6" />
                   )}
                 </Button>
               </div>

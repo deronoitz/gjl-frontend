@@ -133,15 +133,16 @@ export default function AdminAnnouncementsPage() {
   };
 
   return (
-    <div className="space-y-3 md:space-y-4">
-      {/* Mobile-Optimized Header */}
-      <div className="space-y-2">
+    <div className="space-y-3 md:space-y-5 lg:space-y-6">
+      {/* Responsive Header - Optimized for tablet */}
+      <div className="space-y-2 md:space-y-3">
         <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
           <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight flex items-center gap-2 md:gap-3">
+              <Megaphone className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-blue-600" />
               Kelola Pengumuman
             </h1>
-            <p className="text-sm md:text-base text-muted-foreground">
+            <p className="text-sm md:text-base lg:text-lg text-muted-foreground">
               Buat dan kelola pengumuman untuk warga perumahan
             </p>
           </div>
@@ -153,7 +154,7 @@ export default function AdminAnnouncementsPage() {
             }}>
               <DrawerTrigger asChild>
                 <Button className="w-full md:w-auto" size="lg">
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 md:h-5 md:w-5 mr-2" />
                   Buat Pengumuman
                 </Button>
               </DrawerTrigger>
@@ -164,28 +165,28 @@ export default function AdminAnnouncementsPage() {
                   </DrawerTitle>
                 </DrawerHeader>
                 <div className="max-h-[70vh] overflow-y-auto px-1">
-                  <form id="announcement-form" onSubmit={handleSubmit} className="space-y-4 pb-4">
+                  <form id="announcement-form" onSubmit={handleSubmit} className="space-y-4 md:space-y-5 pb-4">
                     <div className="space-y-2">
-                      <Label htmlFor="title" className="text-sm font-medium">Judul Pengumuman</Label>
+                      <Label htmlFor="title" className="text-sm md:text-base font-medium">Judul Pengumuman</Label>
                       <Input
                         id="title"
                         value={formData.title}
                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                         placeholder="Masukkan judul pengumuman"
-                        className="h-10"
+                        className="h-10 md:h-12 text-sm md:text-base"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="content" className="text-sm font-medium">Konten Pengumuman</Label>
+                      <Label htmlFor="content" className="text-sm md:text-base font-medium">Konten Pengumuman</Label>
                       <Textarea
                         id="content"
                         value={formData.content}
                         onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                         placeholder="Masukkan konten pengumuman..."
                         rows={5}
-                        className="min-h-[100px] resize-none"
+                        className="min-h-[100px] md:min-h-[120px] resize-none text-sm md:text-base"
                       />
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs md:text-sm text-muted-foreground">
                         Tulis pengumuman dengan jelas dan lengkap
                       </p>
                     </div>
@@ -346,13 +347,13 @@ export default function AdminAnnouncementsPage() {
             
             {announcements.map((announcement, index) => (
               <Card key={announcement.id} className={`overflow-hidden hover:shadow-md transition-shadow ${
-                index === 0 ? 'border-gray-300 bg-gray-50/50' : 'border-gray-200'
+                index === 0 ? 'border-blue-300 bg-blue-50/30' : 'border-gray-200'
               }`}>
-                {/* Mobile-optimized header */}
-                <CardHeader className="pb-2">
-                  <div className="space-y-2">
+                {/* Tablet-optimized header */}
+                <CardHeader className="pb-2 md:pb-3">
+                  <div className="space-y-2 md:space-y-3">
                     <div className="flex items-start justify-between gap-3">
-                      <CardTitle className="text-base md:text-lg leading-tight flex-1 line-clamp-2">
+                      <CardTitle className="text-base md:text-lg lg:text-xl leading-tight flex-1 line-clamp-2">
                         {announcement.title}
                       </CardTitle>
                       {/* Mobile action buttons */}
@@ -361,17 +362,17 @@ export default function AdminAnnouncementsPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(announcement)}
-                          className="h-7 w-7 p-0"
+                          className="h-7 w-7 md:h-8 md:w-8 p-0"
                         >
-                          <Edit className="h-3 w-3" />
+                          <Edit className="h-3 w-3 md:h-4 md:w-4" />
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(announcement.id)}
-                          className="h-7 w-7 p-0 hover:bg-gray-50"
+                          className="h-7 w-7 md:h-8 md:w-8 p-0 hover:bg-red-50 text-red-600"
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
                         </Button>
                       </div>
                     </div>
@@ -395,18 +396,18 @@ export default function AdminAnnouncementsPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(announcement)}
-                          className="h-7 text-xs"
+                          className="h-8 lg:h-9 text-xs md:text-sm"
                         >
-                          <Edit className="h-3 w-3 mr-1" />
+                          <Edit className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                           Edit
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(announcement.id)}
-                          className="h-7 text-xs hover:bg-gray-50"
+                          className="h-8 lg:h-9 text-xs md:text-sm hover:bg-red-50 text-red-600 border-red-200"
                         >
-                          <Trash2 className="h-3 w-3 mr-1" />
+                          <Trash2 className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                           Hapus
                         </Button>
                       </div>
@@ -415,8 +416,8 @@ export default function AdminAnnouncementsPage() {
                 </CardHeader>
                 
                 <CardContent className="pt-0">
-                  <div className="bg-gray-50 rounded-lg p-2 md:p-3">
-                    <p className="text-sm md:text-base text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  <div className="bg-gray-50 rounded-lg p-3 md:p-4 lg:p-5">
+                    <p className="text-sm md:text-base lg:text-lg text-gray-700 whitespace-pre-wrap leading-relaxed">
                       {expandedAnnouncements.has(announcement.id) 
                         ? announcement.content 
                         : truncateText(announcement.content, 150)

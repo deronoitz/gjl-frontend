@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerFooter } from '@/components/ui/drawer';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Calendar, Image as ImageIcon, Edit, Trash2, Upload, ExternalLink, FolderOpen, Loader2 } from 'lucide-react';
+import { Plus, Calendar, Image as ImageIcon, Edit, Trash2, Upload, ExternalLink, FolderOpen, Loader2, Camera } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import Image from 'next/image';
@@ -176,15 +176,16 @@ export default function GalleryPage() {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      {/* Mobile-Optimized Header */}
+    <div className="space-y-4 md:space-y-5 lg:space-y-6">
+      {/* Responsive Header - Optimized for tablet */}
       <div className="space-y-3">
         <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
           <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight flex items-center gap-2 md:gap-3">
+              <Camera className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-purple-600" />
               Galeri Album
             </h1>
-            <p className="text-sm md:text-base text-muted-foreground">
+            <p className="text-sm md:text-base lg:text-lg text-muted-foreground">
               Kumpulan album foto kegiatan dan momen di perumahan
             </p>
           </div>
@@ -301,34 +302,34 @@ export default function GalleryPage() {
                     Tambah Album
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="mx-2 md:mx-0 w-[calc(100vw-1rem)] md:w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="mx-2 md:mx-0 w-[calc(100vw-1rem)] md:w-full max-w-3xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle className="text-lg md:text-xl">
+                    <DialogTitle className="text-lg md:text-xl lg:text-2xl">
                       {editingAlbum ? 'Edit Album' : 'Tambah Album Baru'}
                     </DialogTitle>
                   </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
                     <div className="space-y-2">
-                      <Label htmlFor="title" className="text-sm font-medium">Judul Album</Label>
+                      <Label htmlFor="title" className="text-sm md:text-base font-medium">Judul Album</Label>
                       <Input
                         id="title"
                         value={formData.title}
                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                         placeholder="Contoh: Kegiatan Gotong Royong September 2024"
-                        className="h-11"
+                        className="h-11 md:h-12 text-sm md:text-base"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="coverImage" className="text-sm font-medium">Gambar Cover</Label>
+                      <Label htmlFor="coverImage" className="text-sm md:text-base font-medium">Gambar Cover</Label>
                       <Input
                         id="coverImage"
                         type="file"
                         accept="image/*"
                         onChange={handleFileChange}
-                        className="cursor-pointer h-11 file:mr-3 file:px-3 file:py-2 file:rounded-md file:border-0 file:text-sm file:bg-primary file:text-primary-foreground file:hover:bg-primary/90"
+                        className="cursor-pointer h-11 md:h-12 text-sm md:text-base file:mr-3 file:px-3 file:py-2 file:rounded-md file:border-0 file:text-sm file:bg-primary file:text-primary-foreground file:hover:bg-primary/90"
                       />
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs md:text-sm text-muted-foreground">
                         Upload gambar untuk cover album (JPG, PNG, GIF, maksimal 5MB)
                       </p>
                     </div>
@@ -439,8 +440,8 @@ export default function GalleryPage() {
             Menampilkan {albums.length} album
           </div>
           
-          {/* Mobile-Optimized Grid */}
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {/* Tablet-Optimized Grid */}
+          <div className="grid gap-3 sm:gap-4 md:gap-5 lg:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {albums.map((album) => (
               <Card key={album.id} className="overflow-hidden">
                 <div className="aspect-video relative bg-gray-100 overflow-hidden">
@@ -457,48 +458,48 @@ export default function GalleryPage() {
                   />
                 </div>
                 
-                <CardHeader className="pb-2 px-4 pt-4">
+                <CardHeader className="pb-2 px-3 md:px-4 pt-3 md:pt-4">
                   <div className="space-y-2">
-                    <CardTitle className="text-base md:text-lg leading-tight line-clamp-2">
+                    <CardTitle className="text-sm md:text-base lg:text-lg leading-tight line-clamp-2">
                       {album.title}
                     </CardTitle>
-                    <Badge variant="outline" className="text-xs w-fit">
-                      <Calendar className="h-3 w-3 mr-1" />
+                    <Badge variant="outline" className="text-xs md:text-sm w-fit">
+                      <Calendar className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                       {format(album.createdAt, 'dd MMM yyyy', { locale: id })}
                     </Badge>
                   </div>
                 </CardHeader>
                 
-                <CardContent className="pt-0 px-4 pb-4">
+                <CardContent className="pt-0 px-3 md:px-4 pb-3 md:pb-4">
                   <div className="space-y-2">
                     <Button
                       size="sm"
                       onClick={() => window.open(album.driveUrl, '_blank')}
-                      className="w-full h-9"
+                      className="w-full h-8 md:h-9 text-xs md:text-sm"
                     >
-                      <ExternalLink className="h-4 w-4 mr-2" />
+                      <ExternalLink className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                       Lihat Album
                     </Button>
                     
                     {isAdmin && (
-                      <div className="flex space-x-2">
+                      <div className="flex space-x-1.5 md:space-x-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(album)}
-                          className="flex-1 h-9"
+                          className="flex-1 h-8 md:h-9 text-xs md:text-sm"
                         >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
+                          <Edit className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                          <span className="hidden sm:inline">Edit</span>
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(album.id)}
-                          className="flex-1 h-9 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                          className="flex-1 h-8 md:h-9 text-xs md:text-sm text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                         >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Hapus
+                          <Trash2 className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                          <span className="hidden sm:inline">Hapus</span>
                         </Button>
                       </div>
                     )}
