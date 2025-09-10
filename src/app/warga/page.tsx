@@ -141,45 +141,43 @@ export default function WargaPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <div className="flex space-x-2 md:space-x-6 lg:space-x-8 md:col-span-2">
-                {/* Sort By */}
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">
-                    Urutkan dari
-                  </label>
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="houseNumber">Nomor Rumah</SelectItem>
-                      <SelectItem value="name">Nama</SelectItem>
-                      <SelectItem value="position">Jabatan</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Sort By */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Urutkan dari
+                </label>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="houseNumber">Nomor Rumah</SelectItem>
+                    <SelectItem value="name">Nama</SelectItem>
+                    <SelectItem value="position">Jabatan</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                {/* Filter by Position */}
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Jabatan</label>
-                  <Select
-                    value={filterByPosition}
-                    onValueChange={setFilterByPosition}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Semua Jabatan</SelectItem>
-                      <SelectItem value="none">Tanpa Jabatan</SelectItem>
-                      {positions.map((position) => (
-                        <SelectItem key={position} value={position}>
-                          {position}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Filter by Position */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Jabatan</label>
+                <Select
+                  value={filterByPosition}
+                  onValueChange={setFilterByPosition}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Jabatan</SelectItem>
+                    <SelectItem value="none">Tanpa Jabatan</SelectItem>
+                    {positions.map((position) => (
+                      <SelectItem key={position} value={position}>
+                        {position}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>
