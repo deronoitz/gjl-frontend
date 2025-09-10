@@ -241,7 +241,7 @@ export default function Navigation() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
-                      <span className="text-sm font-semibold text-gray-900">{user.houseNumber}</span>
+                      <span className="text-sm font-semibold text-gray-900">{user.name}</span>
                       <Badge 
                         variant={isAdmin ? 'destructive' : 'secondary'}
                         className="w-fit text-xs mt-1"

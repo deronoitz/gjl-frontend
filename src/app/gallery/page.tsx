@@ -10,11 +10,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerFooter } from '@/components/ui/drawer';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Calendar, Image as ImageIcon, Edit, Trash2, Upload, ExternalLink, FolderOpen, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import Image from 'next/image';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function GalleryPage() {
   const { user } = useAuth();
@@ -38,6 +40,7 @@ export default function GalleryPage() {
   const [coverImagePreview, setCoverImagePreview] = useState<string>('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isMobile = useIsMobile();
 
   const isAdmin = user?.role === 'admin';
 
@@ -187,105 +190,207 @@ export default function GalleryPage() {
           </div>
           
           {isAdmin && (
-            <Dialog open={isDialogOpen} onOpenChange={(open) => {
-              setIsDialogOpen(open);
-              if (!open) resetDialog();
-            }}>
-              <DialogTrigger asChild>
-                <Button className="w-full md:w-auto">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Tambah Album
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="mx-2 md:mx-0 w-[calc(100vw-1rem)] md:w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="text-lg md:text-xl">
-                    {editingAlbum ? 'Edit Album' : 'Tambah Album Baru'}
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title" className="text-sm font-medium">Judul Album</Label>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="Contoh: Kegiatan Gotong Royong September 2024"
-                      className="h-11"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="coverImage" className="text-sm font-medium">Gambar Cover</Label>
-                    <Input
-                      id="coverImage"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="cursor-pointer h-11 file:mr-3 file:px-3 file:py-2 file:rounded-md file:border-0 file:text-sm file:bg-primary file:text-primary-foreground file:hover:bg-primary/90"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Upload gambar untuk cover album (JPG, PNG, GIF, maksimal 5MB)
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="driveUrl" className="text-sm font-medium">URL Google Drive</Label>
-                    <Input
-                      id="driveUrl"
-                      type="url"
-                      value={formData.driveUrl}
-                      onChange={(e) => setFormData({ ...formData, driveUrl: e.target.value })}
-                      placeholder="https://drive.google.com/drive/folders/..."
-                      className="h-11"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Link folder Google Drive yang berisi foto-foto album
-                    </p>
-                  </div>
-
-                  {coverImagePreview && (
-                    <div className="border rounded-lg p-3 bg-gray-50">
-                      <p className="text-xs font-medium text-gray-700 mb-2">Preview Cover:</p>
-                      <div className="aspect-video relative bg-gray-100 rounded overflow-hidden">
-                        <Image
-                          src={coverImagePreview}
-                          alt="Preview"
-                          fill
-                          className="object-cover"
-                          onError={() => setMessage('Gambar cover tidak dapat dimuat.')}
+            isMobile ? (
+              <Drawer open={isDialogOpen} onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) resetDialog();
+              }}>
+                <DrawerTrigger asChild>
+                  <Button className="w-full md:w-auto">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Tambah Album
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent className="px-4">
+                  <DrawerHeader className="text-left">
+                    <DrawerTitle className="text-lg">
+                      {editingAlbum ? 'Edit Album' : 'Tambah Album Baru'}
+                    </DrawerTitle>
+                  </DrawerHeader>
+                  <div className="max-h-[70vh] overflow-y-auto px-1">
+                    <form id="album-form" onSubmit={handleSubmit} className="space-y-4 pb-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="title" className="text-sm font-medium">Judul Album</Label>
+                        <Input
+                          id="title"
+                          value={formData.title}
+                          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                          placeholder="Contoh: Kegiatan Gotong Royong September 2024"
+                          className="h-11"
                         />
                       </div>
-                    </div>
-                  )}
-                  
-                  {message && (
-                    <Alert>
-                      <AlertDescription className="text-sm">{message}</AlertDescription>
-                    </Alert>
-                  )}
-                  
-                  <div className="flex flex-col-reverse md:flex-row justify-end space-y-2 space-y-reverse md:space-y-0 md:space-x-2 pt-2">
-                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="h-11">
-                      Batal
-                    </Button>
-                    <Button type="submit" disabled={isSubmitting} className="h-11">
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          {editingAlbum ? 'Mengupdate...' : 'Menambahkan...'}
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-4 w-4 mr-2" />
-                          {editingAlbum ? 'Update' : 'Tambah'}
-                        </>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="coverImage" className="text-sm font-medium">Gambar Cover</Label>
+                        <Input
+                          id="coverImage"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          className="cursor-pointer h-11 file:mr-3 file:px-3 file:py-2 file:rounded-md file:border-0 file:text-sm file:bg-primary file:text-primary-foreground file:hover:bg-primary/90"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Upload gambar untuk cover album (JPG, PNG, GIF, maksimal 5MB)
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="driveUrl" className="text-sm font-medium">URL Google Drive</Label>
+                        <Input
+                          id="driveUrl"
+                          type="url"
+                          value={formData.driveUrl}
+                          onChange={(e) => setFormData({ ...formData, driveUrl: e.target.value })}
+                          placeholder="https://drive.google.com/drive/folders/..."
+                          className="h-11"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Link folder Google Drive yang berisi foto-foto album
+                        </p>
+                      </div>
+
+                      {coverImagePreview && (
+                        <div className="border rounded-lg p-3 bg-gray-50">
+                          <p className="text-xs font-medium text-gray-700 mb-2">Preview Cover:</p>
+                          <div className="aspect-video relative bg-gray-100 rounded overflow-hidden">
+                            <Image
+                              src={coverImagePreview}
+                              alt="Preview"
+                              fill
+                              className="object-cover"
+                              onError={() => setMessage('Gambar cover tidak dapat dimuat.')}
+                            />
+                          </div>
+                        </div>
                       )}
-                    </Button>
+                      
+                      {message && (
+                        <Alert>
+                          <AlertDescription className="text-sm">{message}</AlertDescription>
+                        </Alert>
+                      )}
+                    </form>
                   </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+                  <DrawerFooter className="pt-4 border-t bg-background">
+                    <div className="flex flex-col space-y-2">
+                      <Button size="lg" type="submit" form="album-form" disabled={isSubmitting} className="w-full">
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            {editingAlbum ? 'Mengupdate...' : 'Menambahkan...'}
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            {editingAlbum ? 'Update' : 'Tambah'}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </DrawerFooter>
+                </DrawerContent>
+              </Drawer>
+            ) : (
+              <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) resetDialog();
+              }}>
+                <DialogTrigger asChild>
+                  <Button className="w-full md:w-auto">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Tambah Album
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="mx-2 md:mx-0 w-[calc(100vw-1rem)] md:w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-lg md:text-xl">
+                      {editingAlbum ? 'Edit Album' : 'Tambah Album Baru'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="title" className="text-sm font-medium">Judul Album</Label>
+                      <Input
+                        id="title"
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        placeholder="Contoh: Kegiatan Gotong Royong September 2024"
+                        className="h-11"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="coverImage" className="text-sm font-medium">Gambar Cover</Label>
+                      <Input
+                        id="coverImage"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="cursor-pointer h-11 file:mr-3 file:px-3 file:py-2 file:rounded-md file:border-0 file:text-sm file:bg-primary file:text-primary-foreground file:hover:bg-primary/90"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Upload gambar untuk cover album (JPG, PNG, GIF, maksimal 5MB)
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="driveUrl" className="text-sm font-medium">URL Google Drive</Label>
+                      <Input
+                        id="driveUrl"
+                        type="url"
+                        value={formData.driveUrl}
+                        onChange={(e) => setFormData({ ...formData, driveUrl: e.target.value })}
+                        placeholder="https://drive.google.com/drive/folders/..."
+                        className="h-11"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Link folder Google Drive yang berisi foto-foto album
+                      </p>
+                    </div>
+
+                    {coverImagePreview && (
+                      <div className="border rounded-lg p-3 bg-gray-50">
+                        <p className="text-xs font-medium text-gray-700 mb-2">Preview Cover:</p>
+                        <div className="aspect-video relative bg-gray-100 rounded overflow-hidden">
+                          <Image
+                            src={coverImagePreview}
+                            alt="Preview"
+                            fill
+                            className="object-cover"
+                            onError={() => setMessage('Gambar cover tidak dapat dimuat.')}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {message && (
+                      <Alert>
+                        <AlertDescription className="text-sm">{message}</AlertDescription>
+                      </Alert>
+                    )}
+                    
+                    <div className="flex flex-col-reverse md:flex-row justify-end space-y-2 space-y-reverse md:space-y-0 md:space-x-2 pt-2">
+                      <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="h-11">
+                        Batal
+                      </Button>
+                      <Button type="submit" disabled={isSubmitting} className="h-11">
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            {editingAlbum ? 'Mengupdate...' : 'Menambahkan...'}
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            {editingAlbum ? 'Update' : 'Tambah'}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            )
           )}
         </div>
       </div>

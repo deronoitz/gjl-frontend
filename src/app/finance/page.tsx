@@ -12,6 +12,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { 
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DrawerFooter
+} from '@/components/ui/drawer';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Pagination, 
@@ -37,6 +45,7 @@ import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import Image from 'next/image';
 import { exportFinancialReportToPDF } from '@/lib/pdf-export';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const MONTHS = [
   { value: 'all', label: 'Semua Bulan' },
@@ -100,6 +109,7 @@ export default function FinancePage() {
   } = useFinancialRecords();
 
   const { users } = useHouseBlocks();
+  const isMobile = useIsMobile();
 
   // Filter states
   const [selectedMonth, setSelectedMonth] = useState('all');
@@ -396,277 +406,546 @@ export default function FinancePage() {
 
           {/* Input Manual Button for Admin */}
           {isAdmin && (
-            <Dialog open={isDialogOpen} onOpenChange={(open) => {
-              setIsDialogOpen(open);
-              if (!open) resetForm();
-            }}>
-              <DialogTrigger asChild>
-                <Button className="w-full sm:w-auto">
-                  <Plus className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Input Manual</span>
-                  <span className="sm:hidden">Input</span>
-                </Button>
-              </DialogTrigger>
-            <DialogContent className="max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-lg">Input Manual Laporan Keuangan</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4 pb-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="type" className="text-sm font-medium">Tipe Transaksi *</Label>
-                    <Select 
-                      value={formData.type} 
-                      onValueChange={(value: 'income' | 'expense') => 
-                        setFormData({ ...formData, type: value, category: '' })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih tipe" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="income">Pemasukan</SelectItem>
-                        <SelectItem value="expense">Pengeluaran</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="date" className="text-sm font-medium">Tanggal *</Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="category" className="text-sm font-medium">Kategori *</Label>
-                    <Select 
-                      value={formData.category} 
-                      onValueChange={(value) => setFormData({ ...formData, category: value })}
-                      disabled={!formData.type}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Pilih kategori" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="amount" className="text-sm font-medium">Jumlah (Rp) *</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      min="0"
-                      value={formData.amount}
-                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                      placeholder="0"
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="houseBlock" className="text-sm font-medium">Warga/Blok Rumah (Opsional)</Label>
-                  <Select 
-                    value={formData.user_uuid || 'none'} 
-                    onValueChange={(value) => {
-                      if (value === 'none') {
-                        setFormData({ ...formData, user_uuid: '', houseBlock: '' });
-                      } else {
-                        const selectedUser = users.find(u => u.id === value);
-                        setFormData({ 
-                          ...formData, 
-                          user_uuid: value, 
-                          houseBlock: selectedUser?.house_block || '' 
-                        });
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Pilih warga (opsional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Tidak dipilih</SelectItem>
-                      {users.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Pilih warga jika transaksi terkait dengan rumah tertentu
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="description" className="text-sm font-medium">Deskripsi *</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Jelaskan detail transaksi..."
-                    rows={3}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="proofFile" className="text-sm font-medium">Bukti Pembayaran (Opsional)</Label>
-                  <div 
-                    className="mt-1 relative"
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                  >
-                    {!proofFile ? (
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                        <div className="space-y-2">
-                          <Upload className="h-8 w-8 mx-auto text-gray-400" />
-                          <div className="text-sm text-gray-600">
-                            <label htmlFor="proofFile" className="cursor-pointer text-blue-600 hover:text-blue-500">
-                              Klik untuk upload file
-                            </label>
-                            {' '}atau drag & drop di sini
+            <>
+              {isMobile ? (
+                <Drawer open={isDialogOpen} onOpenChange={(open) => {
+                  setIsDialogOpen(open);
+                  if (!open) resetForm();
+                }}>
+                  <DrawerTrigger asChild>
+                    <Button className="w-full sm:w-auto">
+                      <Plus className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Input Manual</span>
+                      <span className="sm:hidden">Input</span>
+                    </Button>
+                  </DrawerTrigger>
+                  <DrawerContent className="px-4">
+                    <DrawerHeader className="text-left">
+                      <DrawerTitle className="text-lg">Input Manual Laporan Keuangan</DrawerTitle>
+                    </DrawerHeader>
+                    <div className="max-h-[70vh] overflow-y-auto px-1">
+                      <form id="drawer-form" onSubmit={handleSubmit} className="space-y-4 pb-4">
+                        <div className="grid grid-cols-1 gap-4">
+                          <div>
+                            <Label htmlFor="type" className="text-sm font-medium">Tipe Transaksi *</Label>
+                            <Select 
+                              value={formData.type} 
+                              onValueChange={(value: 'income' | 'expense') => 
+                                setFormData({ ...formData, type: value, category: '' })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Pilih tipe" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="income">Pemasukan</SelectItem>
+                                <SelectItem value="expense">Pengeluaran</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
-                          <p className="text-xs text-gray-500">
-                            JPG, PNG, GIF atau PDF (maks. 5MB)
+                          
+                          <div>
+                            <Label htmlFor="date" className="text-sm font-medium">Tanggal *</Label>
+                            <Input
+                              id="date"
+                              type="date"
+                              value={formData.date}
+                              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
+                          <div>
+                            <Label htmlFor="category" className="text-sm font-medium">Kategori *</Label>
+                            <Select 
+                              value={formData.category} 
+                              onValueChange={(value) => setFormData({ ...formData, category: value })}
+                              disabled={!formData.type}
+                            >
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Pilih kategori" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categories.map((category) => (
+                                  <SelectItem key={category} value={category}>
+                                    {category}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="amount" className="text-sm font-medium">Jumlah (Rp) *</Label>
+                            <Input
+                              id="amount"
+                              type="number"
+                              min="0"
+                              value={formData.amount}
+                              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                              placeholder="0"
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="houseBlock" className="text-sm font-medium">Warga/Blok Rumah (Opsional)</Label>
+                          <Select 
+                            value={formData.user_uuid || 'none'} 
+                            onValueChange={(value) => {
+                              if (value === 'none') {
+                                setFormData({ ...formData, user_uuid: '', houseBlock: '' });
+                              } else {
+                                const selectedUser = users.find(u => u.id === value);
+                                setFormData({ 
+                                  ...formData, 
+                                  user_uuid: value, 
+                                  houseBlock: selectedUser?.house_block || '' 
+                                });
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Pilih warga (opsional)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Tidak dipilih</SelectItem>
+                              {users.map((user) => (
+                                <SelectItem key={user.id} value={user.id}>
+                                  {user.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Pilih warga jika transaksi terkait dengan rumah tertentu
                           </p>
                         </div>
-                        <Input
-                          id="proofFile"
-                          type="file"
-                          accept="image/*,application/pdf"
-                          onChange={handleFileChange}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        />
-                      </div>
-                    ) : (
-                      <div className="border-2 border-green-300 rounded-lg p-4 bg-green-50">
-                        <div className="flex items-start space-x-3">
-                          <div className="flex-shrink-0">
-                            {proofFile.type.startsWith('image/') && previewUrl ? (
-                              <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden relative">
-                                <Image 
-                                  src={previewUrl} 
-                                  alt="Preview" 
-                                  fill
-                                  className="object-cover"
-                                  unoptimized
+
+                        <div>
+                          <Label htmlFor="description" className="text-sm font-medium">Deskripsi *</Label>
+                          <Textarea
+                            id="description"
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            placeholder="Jelaskan detail transaksi..."
+                            rows={3}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="proofFileMobile" className="text-sm font-medium">Bukti Pembayaran (Opsional)</Label>
+                          <div 
+                            className="mt-1 relative"
+                            onDrop={handleDrop}
+                            onDragOver={handleDragOver}
+                          >
+                            {!proofFile ? (
+                              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                                <div className="space-y-2">
+                                  <Upload className="h-6 w-6 mx-auto text-gray-400" />
+                                  <div className="text-sm text-gray-600">
+                                    <label htmlFor="proofFileMobile" className="cursor-pointer text-blue-600 hover:text-blue-500">
+                                      Klik untuk upload file
+                                    </label>
+                                  </div>
+                                  <p className="text-xs text-gray-500">
+                                    JPG, PNG, GIF atau PDF (maks. 5MB)
+                                  </p>
+                                </div>
+                                <Input
+                                  id="proofFileMobile"
+                                  type="file"
+                                  accept="image/*,application/pdf"
+                                  onChange={handleFileChange}
+                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                 />
                               </div>
                             ) : (
-                              <div className="w-20 h-20 bg-red-100 rounded-lg flex items-center justify-center">
-                                <FileText className="h-10 w-10 text-red-600" />
+                              <div className="border-2 border-green-300 rounded-lg p-3 bg-green-50">
+                                <div className="flex items-start space-x-3">
+                                  <div className="flex-shrink-0">
+                                    {proofFile.type.startsWith('image/') && previewUrl ? (
+                                      <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden relative">
+                                        <Image 
+                                          src={previewUrl} 
+                                          alt="Preview" 
+                                          fill
+                                          className="object-cover"
+                                          unoptimized
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center">
+                                        <FileText className="h-8 w-8 text-red-600" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-start justify-between">
+                                      <div>
+                                        <p className="text-sm font-medium text-green-800">
+                                          {proofFile.name}
+                                        </p>
+                                        <p className="text-xs text-green-600">
+                                          {(proofFile.size / 1024 / 1024).toFixed(2)} MB
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          {proofFile.type.startsWith('image/') ? 'Gambar' : 'Dokumen PDF'}
+                                        </p>
+                                      </div>
+                                      <div className="flex space-x-1 ml-2">
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            const fileInput = document.getElementById('proofFileMobile') as HTMLInputElement;
+                                            if (fileInput) fileInput.click();
+                                          }}
+                                          className="text-xs px-2 py-1 h-6"
+                                        >
+                                          Ubah
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => {
+                                            if (previewUrl) {
+                                              URL.revokeObjectURL(previewUrl);
+                                            }
+                                            setProofFile(null);
+                                            setPreviewUrl(null);
+                                            const fileInput = document.getElementById('proofFileMobile') as HTMLInputElement;
+                                            if (fileInput) fileInput.value = '';
+                                          }}
+                                          className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <Input
+                                  id="proofFileMobile"
+                                  type="file"
+                                  accept="image/*,application/pdf"
+                                  onChange={handleFileChange}
+                                  className="hidden"
+                                />
                               </div>
                             )}
                           </div>
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <p className="text-sm font-medium text-green-800">
-                                  {proofFile.name}
-                                </p>
-                                <p className="text-xs text-green-600">
-                                  {(proofFile.size / 1024 / 1024).toFixed(2)} MB
-                                </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  {proofFile.type.startsWith('image/') ? 'Gambar' : 'Dokumen PDF'}
-                                </p>
-                              </div>
-                              <div className="flex space-x-1 ml-2">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    // Change file
-                                    const fileInput = document.getElementById('proofFile') as HTMLInputElement;
-                                    if (fileInput) fileInput.click();
-                                  }}
-                                  className="text-xs px-2 py-1 h-6"
-                                >
-                                  Ubah
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    // Clean up preview URL
-                                    if (previewUrl) {
-                                      URL.revokeObjectURL(previewUrl);
-                                    }
-                                    setProofFile(null);
-                                    setPreviewUrl(null);
-                                    // Reset file input
-                                    const fileInput = document.getElementById('proofFile') as HTMLInputElement;
-                                    if (fileInput) fileInput.value = '';
-                                  }}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
                         </div>
-                        <Input
-                          id="proofFile"
-                          type="file"
-                          accept="image/*,application/pdf"
-                          onChange={handleFileChange}
-                          className="hidden"
+
+                        {message && (
+                          <Alert>
+                            <AlertDescription>{message}</AlertDescription>
+                          </Alert>
+                        )}
+                        
+
+                      </form>
+                    </div>
+                    <DrawerFooter className="pt-4 border-t bg-background">
+                      <div className="flex flex-col space-y-2">
+                        <Button 
+                          type="submit" 
+                          disabled={isSubmitting}
+                          className="w-full"
+                          form="drawer-form"
+                        >
+                          {isSubmitting ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Upload className="h-4 w-4 mr-2" />
+                          )}
+                          {isSubmitting ? 'Menyimpan...' : 'Tambah'}
+                        </Button>
+                      </div>
+                    </DrawerFooter>
+                  </DrawerContent>
+                </Drawer>
+              ) : (
+                <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                  setIsDialogOpen(open);
+                  if (!open) resetForm();
+                }}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full sm:w-auto">
+                      <Plus className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Input Manual</span>
+                      <span className="sm:hidden">Input</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-lg">Input Manual Laporan Keuangan</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit} className="space-y-4 pb-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="type" className="text-sm font-medium">Tipe Transaksi *</Label>
+                          <Select 
+                            value={formData.type} 
+                            onValueChange={(value: 'income' | 'expense') => 
+                              setFormData({ ...formData, type: value, category: '' })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pilih tipe" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="income">Pemasukan</SelectItem>
+                              <SelectItem value="expense">Pengeluaran</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="date" className="text-sm font-medium">Tanggal *</Label>
+                          <Input
+                            id="date"
+                            type="date"
+                            value={formData.date}
+                            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="category" className="text-sm font-medium">Kategori *</Label>
+                          <Select 
+                            value={formData.category} 
+                            onValueChange={(value) => setFormData({ ...formData, category: value })}
+                            disabled={!formData.type}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Pilih kategori" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {categories.map((category) => (
+                                <SelectItem key={category} value={category}>
+                                  {category}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="amount" className="text-sm font-medium">Jumlah (Rp) *</Label>
+                          <Input
+                            id="amount"
+                            type="number"
+                            min="0"
+                            value={formData.amount}
+                            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                            placeholder="0"
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="houseBlock" className="text-sm font-medium">Warga/Blok Rumah (Opsional)</Label>
+                        <Select 
+                          value={formData.user_uuid || 'none'} 
+                          onValueChange={(value) => {
+                            if (value === 'none') {
+                              setFormData({ ...formData, user_uuid: '', houseBlock: '' });
+                            } else {
+                              const selectedUser = users.find(u => u.id === value);
+                              setFormData({ 
+                                ...formData, 
+                                user_uuid: value, 
+                                houseBlock: selectedUser?.house_block || '' 
+                              });
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Pilih warga (opsional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Tidak dipilih</SelectItem>
+                            {users.map((user) => (
+                              <SelectItem key={user.id} value={user.id}>
+                                {user.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Pilih warga jika transaksi terkait dengan rumah tertentu
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="description" className="text-sm font-medium">Deskripsi *</Label>
+                        <Textarea
+                          id="description"
+                          value={formData.description}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                          placeholder="Jelaskan detail transaksi..."
+                          rows={3}
+                          className="mt-1"
                         />
                       </div>
-                    )}
-                  </div>
-                </div>
 
-                {message && (
-                  <Alert>
-                    <AlertDescription>{message}</AlertDescription>
-                  </Alert>
-                )}
-                
-                <div className="flex flex-col space-y-2 md:flex-row md:justify-end md:space-y-0 md:space-x-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setIsDialogOpen(false)}
-                    disabled={isSubmitting}
-                    className="w-full md:w-auto"
-                  >
-                    Batal
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmitting}
-                    className="w-full md:w-auto"
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Upload className="h-4 w-4 mr-2" />
-                    )}
-                    {isSubmitting ? 'Menyimpan...' : 'Tambah'}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-            </Dialog>
+                      <div>
+                        <Label htmlFor="proofFile" className="text-sm font-medium">Bukti Pembayaran (Opsional)</Label>
+                        <div 
+                          className="mt-1 relative"
+                          onDrop={handleDrop}
+                          onDragOver={handleDragOver}
+                        >
+                          {!proofFile ? (
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                              <div className="space-y-2">
+                                <Upload className="h-8 w-8 mx-auto text-gray-400" />
+                                <div className="text-sm text-gray-600">
+                                  <label htmlFor="proofFile" className="cursor-pointer text-blue-600 hover:text-blue-500">
+                                    Klik untuk upload file
+                                  </label>
+                                  {' '}atau drag & drop di sini
+                                </div>
+                                <p className="text-xs text-gray-500">
+                                  JPG, PNG, GIF atau PDF (maks. 5MB)
+                                </p>
+                              </div>
+                              <Input
+                                id="proofFile"
+                                type="file"
+                                accept="image/*,application/pdf"
+                                onChange={handleFileChange}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              />
+                            </div>
+                          ) : (
+                            <div className="border-2 border-green-300 rounded-lg p-4 bg-green-50">
+                              <div className="flex items-start space-x-3">
+                                <div className="flex-shrink-0">
+                                  {proofFile.type.startsWith('image/') && previewUrl ? (
+                                    <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden relative">
+                                      <Image 
+                                        src={previewUrl} 
+                                        alt="Preview" 
+                                        fill
+                                        className="object-cover"
+                                        unoptimized
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="w-20 h-20 bg-red-100 rounded-lg flex items-center justify-center">
+                                      <FileText className="h-10 w-10 text-red-600" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-start justify-between">
+                                    <div>
+                                      <p className="text-sm font-medium text-green-800">
+                                        {proofFile.name}
+                                      </p>
+                                      <p className="text-xs text-green-600">
+                                        {(proofFile.size / 1024 / 1024).toFixed(2)} MB
+                                      </p>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        {proofFile.type.startsWith('image/') ? 'Gambar' : 'Dokumen PDF'}
+                                      </p>
+                                    </div>
+                                    <div className="flex space-x-1 ml-2">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          // Change file
+                                          const fileInput = document.getElementById('proofFile') as HTMLInputElement;
+                                          if (fileInput) fileInput.click();
+                                        }}
+                                        className="text-xs px-2 py-1 h-6"
+                                      >
+                                        Ubah
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          // Clean up preview URL
+                                          if (previewUrl) {
+                                            URL.revokeObjectURL(previewUrl);
+                                          }
+                                          setProofFile(null);
+                                          setPreviewUrl(null);
+                                          // Reset file input
+                                          const fileInput = document.getElementById('proofFile') as HTMLInputElement;
+                                          if (fileInput) fileInput.value = '';
+                                        }}
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <Input
+                                id="proofFile"
+                                type="file"
+                                accept="image/*,application/pdf"
+                                onChange={handleFileChange}
+                                className="hidden"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {message && (
+                        <Alert>
+                          <AlertDescription>{message}</AlertDescription>
+                        </Alert>
+                      )}
+                      
+                      <div className="flex flex-col space-y-2 md:flex-row md:justify-end md:space-y-0 md:space-x-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => setIsDialogOpen(false)}
+                          disabled={isSubmitting}
+                          className="w-full md:w-auto"
+                        >
+                          Batal
+                        </Button>
+                        <Button 
+                          type="submit" 
+                          disabled={isSubmitting}
+                          className="w-full md:w-auto"
+                        >
+                          {isSubmitting ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Upload className="h-4 w-4 mr-2" />
+                          )}
+                          {isSubmitting ? 'Menyimpan...' : 'Tambah'}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </>
           )}
         </div>
       </div>

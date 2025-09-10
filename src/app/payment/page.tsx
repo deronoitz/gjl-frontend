@@ -25,6 +25,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { 
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DrawerFooter,
+  DrawerClose
+} from '@/components/ui/drawer';
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {
@@ -57,6 +66,7 @@ import {
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const PAYMENT_METHODS = [
   { value: "bank_transfer", label: "Transfer Bank", icon: Building },
@@ -82,6 +92,7 @@ const MONTHS = [
 export default function PaymentPage() {
   const { user } = useAuth();
   const { settings } = useSettings();
+  const isMobile = useIsMobile();
   const {
     paymentRecords,
     loading: paymentRecordsLoading,
@@ -496,28 +507,30 @@ export default function PaymentPage() {
           </p>
         </div>
 
-        <Dialog
-          open={isNewPaymentDialogOpen}
-          onOpenChange={(open) => {
-            setIsNewPaymentDialogOpen(open);
-            if (!open) {
-              // Clear form year payment records when dialog closes
-              setFormYearPaymentRecords({ year: 0, records: [] });
-            }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button size={"lg"} className="w-full md:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Bayar Iuran</span>
-              <span className="sm:hidden">Bayar</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Bayar Iuran Kas</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
+        {isMobile ? (
+          <Drawer
+            open={isNewPaymentDialogOpen}
+            onOpenChange={(open) => {
+              setIsNewPaymentDialogOpen(open);
+              if (!open) {
+                // Clear form year payment records when drawer closes
+                setFormYearPaymentRecords({ year: 0, records: [] });
+              }
+            }}
+          >
+            <DrawerTrigger asChild>
+              <Button size={"lg"} className="w-full md:w-auto">
+                <Plus className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Bayar Iuran</span>
+                <span className="sm:hidden">Bayar</span>
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent className="px-4">
+              <DrawerHeader className="text-left">
+                <DrawerTitle className="text-lg">Bayar Iuran Kas</DrawerTitle>
+              </DrawerHeader>
+              <div className="max-h-[70vh] overflow-y-auto px-1">
+                <div className="space-y-4 pb-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="months">Bulan</Label>
@@ -640,29 +653,198 @@ export default function PaymentPage() {
                 </div>
               )}
 
-              <div className="flex flex-col space-y-2 md:flex-row md:justify-end md:space-y-0 md:space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsNewPaymentDialogOpen(false)}
-                  className="w-full md:w-auto"
-                  disabled={isCreatingPayment}
-                >
-                  Batal
-                </Button>
-                <Button
-                  onClick={createNewPayment}
-                  className="w-full md:w-auto"
-                  disabled={isCreatingPayment}
-                >
-                  {isCreatingPayment && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  {isCreatingPayment ? "Memproses..." : "Bayar"}
-                </Button>
+                </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+              <DrawerFooter className="pt-2 border-t bg-background">
+                <div className="flex flex-col space-y-2">
+                  <Button
+                    onClick={createNewPayment}
+                    className="w-full"
+                    disabled={isCreatingPayment}
+                  >
+                    {isCreatingPayment && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {isCreatingPayment ? "Memproses..." : "Bayar"}
+                  </Button>
+                  <DrawerClose asChild>
+                    <Button variant="outline" disabled={isCreatingPayment}>
+                      Batal
+                    </Button>
+                  </DrawerClose>
+                </div>
+              </DrawerFooter>
+            </DrawerContent>
+          </Drawer>
+        ) : (
+          <Dialog
+            open={isNewPaymentDialogOpen}
+            onOpenChange={(open) => {
+              setIsNewPaymentDialogOpen(open);
+              if (!open) {
+                // Clear form year payment records when dialog closes
+                setFormYearPaymentRecords({ year: 0, records: [] });
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button size={"lg"} className="w-full md:w-auto">
+                <Plus className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Bayar Iuran</span>
+                <span className="sm:hidden">Bayar</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Bayar Iuran Kas</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="months">Bulan</Label>
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between"
+                        >
+                          {newPaymentForm.months.length === 0
+                            ? "Pilih bulan"
+                            : newPaymentForm.months.length === 1
+                            ? MONTHS[parseInt(newPaymentForm.months[0]) - 1]
+                            : `${newPaymentForm.months.length} bulan dipilih`}
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        className="w-56"
+                        onCloseAutoFocus={(e) => e.preventDefault()}
+                      >
+                        {generateMonthlyPaymentStatus(parseInt(newPaymentForm.year))
+                          .filter((monthStatus) => !monthStatus.isPaid) // Only show unpaid months for the selected year in form
+                          .map((monthStatus) => {
+                            const monthValue = monthStatus.monthNumber.toString();
+                            const isChecked =
+                              newPaymentForm.months.includes(monthValue);
+                            return (
+                              <DropdownMenuCheckboxItem
+                                key={monthStatus.monthNumber}
+                                checked={isChecked}
+                                onSelect={(e) => e.preventDefault()}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setNewPaymentForm({
+                                      ...newPaymentForm,
+                                      months: [
+                                        ...newPaymentForm.months,
+                                        monthValue,
+                                      ].sort((a, b) => parseInt(a) - parseInt(b)),
+                                    });
+                                  } else {
+                                    setNewPaymentForm({
+                                      ...newPaymentForm,
+                                      months: newPaymentForm.months.filter(
+                                        (m) => m !== monthValue
+                                      ),
+                                    });
+                                  }
+                                }}
+                              >
+                                {monthStatus.month}
+                              </DropdownMenuCheckboxItem>
+                            );
+                          })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <div>
+                    <Label htmlFor="year">Tahun</Label>
+                    <Select
+                      value={newPaymentForm.year}
+                      onValueChange={(value) => {
+                        // Clear selected months when year changes
+                        setNewPaymentForm({ 
+                          months: [], 
+                          year: value 
+                        });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih tahun" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="2023">2023</SelectItem>
+                        <SelectItem value="2024">2024</SelectItem>
+                        <SelectItem value="2025">2025</SelectItem>
+                        <SelectItem value="2026">2026</SelectItem>
+                        <SelectItem value="2027">2027</SelectItem>
+                        <SelectItem value="2028">2028</SelectItem>
+                        <SelectItem value="2029">2029</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Total Amount Display */}
+                {newPaymentForm.months.length > 0 && (
+                  <div className="p-3 md:p-4 bg-muted/50 border rounded-lg">
+                    <div className="flex flex-col md:flex-row md:justify-between md:items-center space-y-2 md:space-y-0">
+                      <div>
+                        <p className="text-sm font-medium">
+                          Total yang harus dibayar:
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {newPaymentForm.months.length} bulan × Rp{" "}
+                          {(
+                            settings?.monthly_fee?.amount || 150000
+                          ).toLocaleString("id-ID")}
+                        </p>
+                      </div>
+                      <div className="text-left md:text-right">
+                        <p className="text-lg md:text-xl font-bold">
+                          Rp{" "}
+                          {(
+                            (settings?.monthly_fee?.amount || 150000) *
+                            newPaymentForm.months.length
+                          ).toLocaleString("id-ID")}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t">
+                      <p className="text-xs text-muted-foreground">
+                        Bulan yang dipilih:{" "}
+                        {newPaymentForm.months
+                          .map((m) => MONTHS[parseInt(m) - 1])
+                          .join(", ")}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-col space-y-2 md:flex-row md:justify-end md:space-y-0 md:space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsNewPaymentDialogOpen(false)}
+                    className="w-full md:w-auto"
+                    disabled={isCreatingPayment}
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    onClick={createNewPayment}
+                    className="w-full md:w-auto"
+                    disabled={isCreatingPayment}
+                  >
+                    {isCreatingPayment && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {isCreatingPayment ? "Memproses..." : "Bayar"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* Monthly Payment Status */}

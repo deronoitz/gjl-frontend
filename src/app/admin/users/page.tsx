@@ -9,11 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerFooter } from '@/components/ui/drawer';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Edit, Trash2, Loader2, Home, Calendar, ShieldCheck, User as UserIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function AdminUsersPage() {
   const { users, loading, error, createUser, updateUser, deleteUser } = useUsers();
@@ -30,6 +32,7 @@ export default function AdminUsersPage() {
   });
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isMobile = useIsMobile();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,128 +133,254 @@ export default function AdminUsersPage() {
             </p>
           </div>
           
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetDialog();
-          }}>
-            <DialogTrigger asChild>
-              <Button className="w-full md:w-auto">
-                <Plus className="h-4 w-4 mr-2" />
-                Tambah User
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="mx-2 md:mx-0 w-[calc(100vw-1rem)] md:w-full max-w-md">
-              <DialogHeader>
-                <DialogTitle className="text-lg md:text-xl">
-                  {editingUser ? 'Edit User' : 'Tambah User Baru'}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="houseNumber" className="text-sm font-medium">Nomor Rumah</Label>
-                  <Input
-                    id="houseNumber"
-                    value={formData.houseNumber}
-                    onChange={(e) => setFormData({ ...formData, houseNumber: e.target.value })}
-                    placeholder="Contoh: A-01"
-                    className="h-11"
-                  />
+          {isMobile ? (
+            <Drawer open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetDialog();
+            }}>
+              <DrawerTrigger asChild>
+                <Button className="w-full md:w-auto">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Tambah User
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent className="px-4">
+                <DrawerHeader className="text-left">
+                  <DrawerTitle className="text-lg">
+                    {editingUser ? 'Edit User' : 'Tambah User Baru'}
+                  </DrawerTitle>
+                </DrawerHeader>
+                <div className="max-h-[70vh] overflow-y-auto px-1">
+                  <form id="user-form" onSubmit={handleSubmit} className="space-y-4 pb-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="houseNumber" className="text-sm font-medium">Nomor Rumah</Label>
+                      <Input
+                        id="houseNumber"
+                        value={formData.houseNumber}
+                        onChange={(e) => setFormData({ ...formData, houseNumber: e.target.value })}
+                        placeholder="Contoh: A-01"
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="text-sm font-medium">Nama</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Nama lengkap"
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phoneNumber" className="text-sm font-medium">Nomor Handphone</Label>
+                      <Input
+                        id="phoneNumber"
+                        value={formData.phoneNumber}
+                        onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                        placeholder="Contoh: +62-812-3456-7890"
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="position" className="text-sm font-medium">Jabatan</Label>
+                      {positionsError && (
+                        <div className="text-xs text-red-500 mb-1">Error loading positions: {positionsError}</div>
+                      )}
+                      <select
+                        id="position"
+                        value={formData.position_id}
+                        onChange={(e) => {
+                          const selectedPositionId = e.target.value;
+                          setFormData({ 
+                            ...formData, 
+                            position_id: selectedPositionId
+                          });
+                        }}
+                        className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        disabled={positionsLoading}
+                      >
+                        <option value="">Pilih Jabatan (opsional)</option>
+                        {positions.map((position) => (
+                          <option key={position.id} value={position.id}>
+                            {position.position}
+                          </option>
+                        ))}
+                      </select>
+                      {positionsLoading && (
+                        <div className="text-xs text-gray-500">Loading positions...</div>
+                      )}
+                      <div className="text-xs text-gray-400">Positions loaded: {positions.length}</div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password" className="text-sm font-medium">
+                        Password {editingUser && <span className="text-xs text-muted-foreground">(kosongkan jika tidak ingin mengubah)</span>}
+                      </Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="role" className="text-sm font-medium">Role</Label>
+                      <select
+                        id="role"
+                        value={formData.role}
+                        onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'user' })}
+                        className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      >
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </div>
+                    {message && (
+                      <Alert className="border-orange-200 bg-orange-50">
+                        <AlertDescription className="text-sm">{message}</AlertDescription>
+                      </Alert>
+                    )}
+                  </form>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-sm font-medium">Nama</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Nama lengkap"
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phoneNumber" className="text-sm font-medium">Nomor Handphone</Label>
-                  <Input
-                    id="phoneNumber"
-                    value={formData.phoneNumber}
-                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                    placeholder="Contoh: +62-812-3456-7890"
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="position" className="text-sm font-medium">Jabatan</Label>
-                  {positionsError && (
-                    <div className="text-xs text-red-500 mb-1">Error loading positions: {positionsError}</div>
+                <DrawerFooter className="pt-4 border-t bg-background">
+                  <div className="flex flex-col space-y-2">
+                    <Button type="submit" size="lg" form="user-form" disabled={isSubmitting} className="w-full">
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (editingUser ? 'Update' : 'Tambah')}
+                    </Button>
+                  </div>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
+          ) : (
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetDialog();
+            }}>
+              <DialogTrigger asChild>
+                <Button className="w-full md:w-auto">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Tambah User
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="mx-2 md:mx-0 w-[calc(100vw-1rem)] md:w-full max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-lg md:text-xl">
+                    {editingUser ? 'Edit User' : 'Tambah User Baru'}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="houseNumber" className="text-sm font-medium">Nomor Rumah</Label>
+                    <Input
+                      id="houseNumber"
+                      value={formData.houseNumber}
+                      onChange={(e) => setFormData({ ...formData, houseNumber: e.target.value })}
+                      placeholder="Contoh: A-01"
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-sm font-medium">Nama</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Nama lengkap"
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneNumber" className="text-sm font-medium">Nomor Handphone</Label>
+                    <Input
+                      id="phoneNumber"
+                      value={formData.phoneNumber}
+                      onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                      placeholder="Contoh: +62-812-3456-7890"
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="position" className="text-sm font-medium">Jabatan</Label>
+                    {positionsError && (
+                      <div className="text-xs text-red-500 mb-1">Error loading positions: {positionsError}</div>
+                    )}
+                    <select
+                      id="position"
+                      value={formData.position_id}
+                      onChange={(e) => {
+                        const selectedPositionId = e.target.value;
+                        setFormData({ 
+                          ...formData, 
+                          position_id: selectedPositionId
+                        });
+                      }}
+                      className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      disabled={positionsLoading}
+                    >
+                      <option value="">Pilih Jabatan (opsional)</option>
+                      {positions.map((position) => (
+                        <option key={position.id} value={position.id}>
+                          {position.position}
+                        </option>
+                      ))}
+                    </select>
+                    {positionsLoading && (
+                      <div className="text-xs text-gray-500">Loading positions...</div>
+                    )}
+                    <div className="text-xs text-gray-400">Positions loaded: {positions.length}</div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-sm font-medium">
+                      Password {editingUser && <span className="text-xs text-muted-foreground">(kosongkan jika tidak ingin mengubah)</span>}
+                    </Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="role" className="text-sm font-medium">Role</Label>
+                    <select
+                      id="role"
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'user' })}
+                      className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    >
+                      <option value="user">User</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                  {message && (
+                    <Alert className="border-orange-200 bg-orange-50">
+                      <AlertDescription className="text-sm">{message}</AlertDescription>
+                    </Alert>
                   )}
-                  <select
-                    id="position"
-                    value={formData.position_id}
-                    onChange={(e) => {
-                      const selectedPositionId = e.target.value;
-                      setFormData({ 
-                        ...formData, 
-                        position_id: selectedPositionId
-                      });
-                    }}
-                    className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                    disabled={positionsLoading}
-                  >
-                    <option value="">Pilih Jabatan (opsional)</option>
-                    {positions.map((position) => (
-                      <option key={position.id} value={position.id}>
-                        {position.position}
-                      </option>
-                    ))}
-                  </select>
-                  {positionsLoading && (
-                    <div className="text-xs text-gray-500">Loading positions...</div>
-                  )}
-                  <div className="text-xs text-gray-400">Positions loaded: {positions.length}</div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium">
-                    Password {editingUser && <span className="text-xs text-muted-foreground">(kosongkan jika tidak ingin mengubah)</span>}
-                  </Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role" className="text-sm font-medium">Role</Label>
-                  <select
-                    id="role"
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'user' })}
-                    className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  >
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                {message && (
-                  <Alert className="border-orange-200 bg-orange-50">
-                    <AlertDescription className="text-sm">{message}</AlertDescription>
-                  </Alert>
-                )}
-                <div className="flex flex-col-reverse md:flex-row justify-end space-y-2 space-y-reverse md:space-y-0 md:space-x-2 pt-2">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="h-11">
-                    Batal
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting} className="h-11">
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (editingUser ? 'Update' : 'Tambah')}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <div className="flex flex-col-reverse md:flex-row justify-end space-y-2 space-y-reverse md:space-y-0 md:space-x-2 pt-2">
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="h-11">
+                      Batal
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting} className="h-11">
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (editingUser ? 'Update' : 'Tambah')}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 

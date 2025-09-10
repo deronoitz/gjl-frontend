@@ -9,11 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerFooter } from '@/components/ui/drawer';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Megaphone, Calendar, User, MessageSquare, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function AdminAnnouncementsPage() {
   const { user } = useAuth();
@@ -34,6 +36,8 @@ export default function AdminAnnouncementsPage() {
   });
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [expandedAnnouncements, setExpandedAnnouncements] = useState<Set<string>>(new Set());
+  const isMobile = useIsMobile();
 
   if (!user || user.role !== 'admin') return null;
 
@@ -111,6 +115,23 @@ export default function AdminAnnouncementsPage() {
     setMessage('');
   };
 
+  const toggleExpanded = (announcementId: string) => {
+    setExpandedAnnouncements(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(announcementId)) {
+        newSet.delete(announcementId);
+      } else {
+        newSet.add(announcementId);
+      }
+      return newSet;
+    });
+  };
+
+  const truncateText = (text: string, maxLength: number = 150) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
+
   return (
     <div className="space-y-3 md:space-y-4">
       {/* Mobile-Optimized Header */}
@@ -125,73 +146,144 @@ export default function AdminAnnouncementsPage() {
             </p>
           </div>
           
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetDialog();
-          }}>
-            <DialogTrigger asChild>
-              <Button className="w-full md:w-auto">
-                <Plus className="h-4 w-4 mr-2" />
-                Buat Pengumuman
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="mx-2 md:mx-0 w-[calc(100vw-1rem)] md:w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-lg md:text-xl">
-                  {editingId ? 'Edit Pengumuman' : 'Buat Pengumuman Baru'}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <div className="space-y-1">
-                  <Label htmlFor="title" className="text-sm font-medium">Judul Pengumuman</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Masukkan judul pengumuman"
-                    className="h-10"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="content" className="text-sm font-medium">Konten Pengumuman</Label>
-                  <Textarea
-                    id="content"
-                    value={formData.content}
-                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    placeholder="Masukkan konten pengumuman..."
-                    rows={5}
-                    className="min-h-[100px] resize-none"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Tulis pengumuman dengan jelas dan lengkap
-                  </p>
-                </div>
-                {message && (
-                  <Alert>
-                    <AlertDescription className="text-sm">{message}</AlertDescription>
-                  </Alert>
-                )}
-                <div className="flex flex-col-reverse md:flex-row justify-end space-y-2 space-y-reverse md:space-y-0 md:space-x-2 pt-1">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="h-10">
-                    Batal
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting} className="h-10">
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Menyimpan...
-                      </>
-                    ) : (
-                      <>
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        {editingId ? 'Update' : 'Publikasikan'}
-                      </>
+          {isMobile ? (
+            <Drawer open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetDialog();
+            }}>
+              <DrawerTrigger asChild>
+                <Button className="w-full md:w-auto" size="lg">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Buat Pengumuman
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent className="px-4">
+                <DrawerHeader className="text-left">
+                  <DrawerTitle className="text-lg">
+                    {editingId ? 'Edit Pengumuman' : 'Buat Pengumuman Baru'}
+                  </DrawerTitle>
+                </DrawerHeader>
+                <div className="max-h-[70vh] overflow-y-auto px-1">
+                  <form id="announcement-form" onSubmit={handleSubmit} className="space-y-4 pb-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="title" className="text-sm font-medium">Judul Pengumuman</Label>
+                      <Input
+                        id="title"
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        placeholder="Masukkan judul pengumuman"
+                        className="h-10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="content" className="text-sm font-medium">Konten Pengumuman</Label>
+                      <Textarea
+                        id="content"
+                        value={formData.content}
+                        onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                        placeholder="Masukkan konten pengumuman..."
+                        rows={5}
+                        className="min-h-[100px] resize-none"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Tulis pengumuman dengan jelas dan lengkap
+                      </p>
+                    </div>
+                    {message && (
+                      <Alert>
+                        <AlertDescription className="text-sm">{message}</AlertDescription>
+                      </Alert>
                     )}
-                  </Button>
+                  </form>
                 </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+                <DrawerFooter className="pt-4 border-t bg-background">
+                  <div className="flex flex-col space-y-2">
+                    <Button type="submit" size="lg" form="announcement-form" disabled={isSubmitting} className="w-full">
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Menyimpan...
+                        </>
+                      ) : (
+                        <>
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          {editingId ? 'Update' : 'Publikasikan'}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
+          ) : (
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetDialog();
+            }}>
+              <DialogTrigger asChild>
+                <Button className="w-full md:w-auto" size="lg">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Buat Pengumuman
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="mx-2 md:mx-0 w-[calc(100vw-1rem)] md:w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-lg md:text-xl">
+                    {editingId ? 'Edit Pengumuman' : 'Buat Pengumuman Baru'}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="title" className="text-sm font-medium">Judul Pengumuman</Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="Masukkan judul pengumuman"
+                      className="h-10"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="content" className="text-sm font-medium">Konten Pengumuman</Label>
+                    <Textarea
+                      id="content"
+                      value={formData.content}
+                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                      placeholder="Masukkan konten pengumuman..."
+                      rows={5}
+                      className="min-h-[100px] resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Tulis pengumuman dengan jelas dan lengkap
+                    </p>
+                  </div>
+                  {message && (
+                    <Alert>
+                      <AlertDescription className="text-sm">{message}</AlertDescription>
+                    </Alert>
+                  )}
+                  <div className="flex flex-col-reverse md:flex-row justify-end space-y-2 space-y-reverse md:space-y-0 md:space-x-2 pt-1">
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="h-10">
+                      Batal
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting} className="h-10">
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Menyimpan...
+                        </>
+                      ) : (
+                        <>
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          {editingId ? 'Update' : 'Publikasikan'}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 
@@ -325,8 +417,21 @@ export default function AdminAnnouncementsPage() {
                 <CardContent className="pt-0">
                   <div className="bg-gray-50 rounded-lg p-2 md:p-3">
                     <p className="text-sm md:text-base text-gray-700 whitespace-pre-wrap leading-relaxed">
-                      {announcement.content}
+                      {expandedAnnouncements.has(announcement.id) 
+                        ? announcement.content 
+                        : truncateText(announcement.content, 150)
+                      }
                     </p>
+                    {announcement.content.length > 150 && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => toggleExpanded(announcement.id)}
+                        className="p-0 h-auto text-xs mt-2 text-blue-600 hover:text-blue-800"
+                      >
+                        {expandedAnnouncements.has(announcement.id) ? 'Sembunyikan' : 'Lihat Selengkapnya'}
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
