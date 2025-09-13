@@ -114,7 +114,7 @@ export default function Navigation() {
                         <DropdownMenuTrigger asChild>
                           <Button 
                             variant="ghost" 
-                            className={`px-2 md:px-3 lg:px-4 py-2 rounded-md text-xs md:text-sm lg:text-base font-medium flex items-center space-x-1 ${
+                            className={`px-2 md:px-3 lg:px-4 py-2 rounded-md text-xs md:text-sm lg:text-sm font-medium flex items-center space-x-1 ${
                               isActiveParent(item.subItems)
                                 ? 'bg-emerald-100 text-emerald-900'
                                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
