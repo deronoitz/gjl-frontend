@@ -151,6 +151,36 @@ export async function POST(request: NextRequest) {
       authorName: author?.name || 'Unknown'
     };
 
+    // Send push notification to all subscribed users
+    try {
+      const notificationResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': request.headers.get('cookie') || ''
+        },
+        body: JSON.stringify({
+          title: `📢 ${announcement.title}`,
+          body: announcement.content.length > 100 
+            ? `${announcement.content.substring(0, 97)}...` 
+            : announcement.content,
+          icon: '/android-chrome-192x192.png',
+          badge: '/favicon-32x32.png',
+          url: '/dashboard?tab=announcements'
+        })
+      });
+
+      if (!notificationResponse.ok) {
+        console.error('Failed to send push notifications:', await notificationResponse.text());
+      } else {
+        const notificationResult = await notificationResponse.json();
+        console.log('Push notifications sent:', notificationResult);
+      }
+    } catch (notificationError) {
+      console.error('Error sending push notifications:', notificationError);
+      // Don't fail the announcement creation if push notifications fail
+    }
+
     return NextResponse.json(transformedAnnouncement, { status: 201 });
   } catch (error) {
     console.error('Error in POST /api/announcements:', error);

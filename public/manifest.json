@@ -39,6 +39,11 @@
   ],
   "categories": ["utilities", "productivity"],
   "screenshots": [],
+  "permissions": [
+    "notifications"
+  ],
+  "prefer_related_applications": false,
+  "scope": "/",
   "shortcuts": [
     {
       "name": "Dashboard",

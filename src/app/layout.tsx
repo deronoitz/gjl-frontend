@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import PWAInstall from '@/components/PWAInstall';
 import OfflineIndicator from '@/components/OfflineIndicator';
 import UpdateNotification from '@/components/UpdateNotification';
+import NotificationPermissions from '@/components/NotificationPermissions';
 import { Analytics } from '@vercel/analytics/react';
 
 const geistSans = Geist({
@@ -73,6 +74,7 @@ export default function RootLayout({
             <Navigation />
             <OfflineIndicator />
             <UpdateNotification />
+            <NotificationPermissions />
             <main className="container mx-auto px-3 md:px-4 py-4 md:py-6 pt-20 md:pt-24">
               {children}
             </main>

@@ -12,6 +12,7 @@ import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import ChangePasswordDialog from '@/components/ChangePasswordDialog';
 import ChangePhoneDialog from '@/components/ChangePhoneDialog';
+import NotificationPermissions from '@/components/NotificationPermissions';
 
 const navigationItems = [
   { name: 'Home', href: '/dashboard', icon: Home },
@@ -175,7 +176,8 @@ export default function Navigation() {
               </div>
               
               {/* Mobile menu button */}
-              <div className="md:hidden">
+              <div className="flex items-center gap-2 md:hidden">
+                <NotificationPermissions />
                 <Button
                   variant="ghost"
                   size="icon"
@@ -192,7 +194,8 @@ export default function Navigation() {
               </div>
               
               {/* Desktop Dropdown */}
-              <div className="hidden md:block">
+              <div className="hidden md:flex md:items-center md:gap-2">
+                <NotificationPermissions />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
