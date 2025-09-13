@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Home, LogOut, DollarSign, CreditCard, Camera, Users, Megaphone, Settings, Lock, Menu, X, ChevronDown, ChevronUp, Network, Phone } from 'lucide-react';
+import { Home, LogOut, DollarSign, CreditCard, Camera, Users, Megaphone, Settings, Lock, Menu, X, ChevronDown, ChevronUp, Network, Phone, Images } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -23,7 +23,8 @@ const navigationItems = [
       { name: 'Pembayaran', href: '/payment', icon: CreditCard },
     ]
   },
-  { name: 'Galeri', href: '/gallery', icon: Camera },
+  { name: 'CCTV', href: '/cctv', icon: Camera },
+  { name: 'Galeri', href: '/gallery', icon: Images },
   { 
     name: 'Warga', 
     icon: Users,
@@ -45,7 +46,8 @@ const adminNavItems = [
       { name: 'Laporan Iuran', href: '/admin/payment-report', icon: CreditCard },
     ]
   },
-  { name: 'Galeri', href: '/gallery', icon: Camera },
+  { name: 'CCTV', href: '/cctv', icon: Camera },
+  { name: 'Galeri', href: '/gallery', icon: Images },
   { 
     name: 'Warga', 
     icon: Users,
