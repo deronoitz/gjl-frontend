@@ -153,31 +153,41 @@ export async function POST(request: NextRequest) {
 
     // Send push notification to all subscribed users
     try {
-      const notificationResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/send`, {
+      const notificationUrl = `${process.env.NEXTAUTH_URL}/api/notifications/send`;
+      const notificationPayload = {
+        title: `📢 ${announcement.title}`,
+        body: announcement.content.length > 100 
+          ? `${announcement.content.substring(0, 97)}...` 
+          : announcement.content,
+        icon: '/android-chrome-192x192.png',
+        badge: '/favicon-32x32.png',
+        url: '/dashboard?tab=announcements'
+      };
+      
+      console.log('🔔 Sending push notifications...');
+      console.log('📍 Notification URL:', notificationUrl);
+      console.log('📦 Notification payload:', notificationPayload);
+      
+      const notificationResponse = await fetch(notificationUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Cookie': request.headers.get('cookie') || ''
         },
-        body: JSON.stringify({
-          title: `📢 ${announcement.title}`,
-          body: announcement.content.length > 100 
-            ? `${announcement.content.substring(0, 97)}...` 
-            : announcement.content,
-          icon: '/android-chrome-192x192.png',
-          badge: '/favicon-32x32.png',
-          url: '/dashboard?tab=announcements'
-        })
+        body: JSON.stringify(notificationPayload)
       });
 
+      console.log('📤 Notification response status:', notificationResponse.status);
+      
       if (!notificationResponse.ok) {
-        console.error('Failed to send push notifications:', await notificationResponse.text());
+        const errorText = await notificationResponse.text();
+        console.error('❌ Failed to send push notifications:', errorText);
       } else {
         const notificationResult = await notificationResponse.json();
-        console.log('Push notifications sent:', notificationResult);
+        console.log('✅ Push notifications sent successfully:', notificationResult);
       }
     } catch (notificationError) {
-      console.error('Error sending push notifications:', notificationError);
+      console.error('❌ Error sending push notifications:', notificationError);
       // Don't fail the announcement creation if push notifications fail
     }
 

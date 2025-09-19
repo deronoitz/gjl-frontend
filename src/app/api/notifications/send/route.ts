@@ -34,16 +34,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Get all active push subscriptions
+    console.log('📋 Fetching push subscriptions from database...');
     const { data: subscriptions, error } = await supabaseService
       .from('push_subscriptions')
       .select('*');
 
     if (error) {
-      console.error('Error fetching subscriptions:', error);
+      console.error('❌ Error fetching subscriptions:', error);
       return NextResponse.json({ error: 'Failed to fetch subscriptions' }, { status: 500 });
     }
 
+    console.log('📊 Found subscriptions:', subscriptions?.length || 0);
+    if (subscriptions && subscriptions.length > 0) {
+      console.log('👥 Subscriber user IDs:', subscriptions.map(s => s.user_id));
+    }
+
     if (!subscriptions || subscriptions.length === 0) {
+      console.log('⚠️ No active subscriptions found');
       return NextResponse.json({ message: 'No active subscriptions found' }, { status: 200 });
     }
 
