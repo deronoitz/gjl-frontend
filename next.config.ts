@@ -72,7 +72,7 @@ export default withPWA({
   publicExcludes: ['!noprecache/**/*'],
   // Disable precaching of problematic files
   manifestTransforms: [
-    (manifestEntries) => {
+    (manifestEntries: Array<{ url: string; revision: string | null }>) => {
       const manifest = manifestEntries.filter(entry => {
         // Exclude problematic build files
         return !entry.url.includes('app-build-manifest.json') &&
