@@ -152,6 +152,9 @@ export async function POST(request: NextRequest) {
     };
 
     // Send push notification to all subscribed users
+    let notificationResult = null;
+    let notificationError = null;
+    
     try {
       const notificationUrl = `${process.env.NEXTAUTH_URL}/api/notifications/send`;
       const notificationPayload = {
@@ -182,16 +185,38 @@ export async function POST(request: NextRequest) {
       if (!notificationResponse.ok) {
         const errorText = await notificationResponse.text();
         console.error('❌ Failed to send push notifications:', errorText);
+        notificationError = {
+          status: notificationResponse.status,
+          statusText: notificationResponse.statusText,
+          error: errorText
+        };
       } else {
-        const notificationResult = await notificationResponse.json();
+        notificationResult = await notificationResponse.json();
         console.log('✅ Push notifications sent successfully:', notificationResult);
       }
-    } catch (notificationError) {
-      console.error('❌ Error sending push notifications:', notificationError);
+    } catch (error) {
+      console.error('❌ Error sending push notifications:', error);
+      notificationError = {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        type: 'network_error'
+      };
       // Don't fail the announcement creation if push notifications fail
     }
 
-    return NextResponse.json(transformedAnnouncement, { status: 201 });
+    // Include notification debug info in response
+    const responseData = {
+      ...transformedAnnouncement,
+      debug: {
+        notification: {
+          success: !!notificationResult,
+          result: notificationResult,
+          error: notificationError,
+          url: `${process.env.NEXTAUTH_URL}/api/notifications/send`
+        }
+      }
+    };
+
+    return NextResponse.json(responseData, { status: 201 });
   } catch (error) {
     console.error('Error in POST /api/announcements:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
