@@ -3,8 +3,6 @@
 import { useAnnouncements } from '@/hooks/use-announcements';
 import { useAnnouncementForm } from '@/hooks/use-announcement-form';
 import { useAuth } from '@/contexts/CustomAuthContext';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Megaphone } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   AnnouncementModal,
@@ -76,12 +74,6 @@ export default function AdminAnnouncementsPage() {
         </div>
       </div>
 
-      {message && (
-        <Alert>
-          <Megaphone className="h-4 w-4" />
-          <AlertDescription className="text-sm">{message}</AlertDescription>
-        </Alert>
-      )}
 
       {/* Announcements List */}
       <div className="space-y-2 md:space-y-3">

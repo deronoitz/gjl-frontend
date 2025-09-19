@@ -7,6 +7,7 @@ import { Edit, Trash2, Calendar, User } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { memo, useState } from "react";
+import { toast } from "sonner";
 
 interface AnnouncementData {
   id: string;
@@ -41,9 +42,17 @@ export const AnnouncementCard = memo(function AnnouncementCard({
   };
 
   const handleDelete = () => {
-    if (confirm("Apakah Anda yakin ingin menghapus pengumuman ini?")) {
-      onDelete(announcement.id);
-    }
+    toast("Apakah Anda yakin ingin menghapus pengumuman ini?", {
+      description: announcement.title,
+      action: {
+        label: "Hapus",
+        onClick: () => onDelete(announcement.id),
+      },
+      cancel: {
+        label: "Batal",
+        onClick: () => {},
+      },
+    });
   };
 
   const toggleExpanded = () => {

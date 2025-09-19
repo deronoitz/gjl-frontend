@@ -12,18 +12,24 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   );
 }
 
-// POST /api/notifications/send - Send push notification (admin only)
+// POST /api/notifications/send - Send push notification (admin only or internal)
 export async function POST(request: NextRequest) {
   try {
-    const sessionToken = request.cookies.get('session_token')?.value;
+    // Check for internal server request (from announcements API)
+    const isInternalRequest = request.headers.get('x-internal-request') === 'true';
+    
+    if (!isInternalRequest) {
+      // External request - require authentication
+      const sessionToken = request.cookies.get('session_token')?.value;
 
-    if (!sessionToken) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+      if (!sessionToken) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
 
-    const session = await CustomAuth.verifySession(sessionToken);
-    if (!session || session.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+      const session = await CustomAuth.verifySession(sessionToken);
+      if (!session || session.role !== 'admin') {
+        return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+      }
     }
 
     const body = await request.json();

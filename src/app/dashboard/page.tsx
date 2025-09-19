@@ -69,11 +69,14 @@ export default function DashboardPage() {
     isLoading: announcementsLoading,
     error: announcementsError,
   } = useAnnouncements();
+  const [showAllAnnouncements, setShowAllAnnouncements] = useState(false);
 
   if (!user) return null;
 
-  // Get the latest 3 announcements for dashboard
-  const latestAnnouncements = announcements.slice(0, 3);
+  // Get announcements to display based on toggle state
+  const displayedAnnouncements = showAllAnnouncements 
+    ? announcements 
+    : announcements.slice(0, 3);
 
   return (
     <div className="space-y-4 md:space-y-5 lg:space-y-6">
@@ -114,7 +117,7 @@ export default function DashboardPage() {
                 Gagal memuat pengumuman: {announcementsError}
               </AlertDescription>
             </Alert>
-          ) : latestAnnouncements.length === 0 ? (
+          ) : displayedAnnouncements.length === 0 ? (
             <div className="text-center py-8">
               <Bell className="h-12 w-12 mx-auto text-gray-300 mb-3" />
               <p className="text-sm text-muted-foreground">
@@ -123,7 +126,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {latestAnnouncements.map((announcement, index) => (
+              {displayedAnnouncements.map((announcement, index) => (
                 <div
                   key={announcement.id}
                   className={`p-3 md:p-4 lg:p-5 border rounded-lg space-y-2 md:space-y-3 transition-all hover:shadow-sm `}
@@ -161,11 +164,24 @@ export default function DashboardPage() {
                 </div>
               ))}
 
-              {/* Show more link - responsive */}
+              {/* Show more/less link - responsive */}
               {announcements.length > 3 && (
                 <div className="text-center pt-2 md:pt-3">
-                  <button className="text-xs md:text-sm lg:text-base text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                    Lihat semua pengumuman ({announcements.length})
+                  <button 
+                    onClick={() => setShowAllAnnouncements(!showAllAnnouncements)}
+                    className="text-xs md:text-sm lg:text-base text-blue-600 hover:text-blue-700 font-medium transition-colors flex items-center justify-center gap-1 mx-auto"
+                  >
+                    {showAllAnnouncements ? (
+                      <>
+                        Lihat lebih sedikit
+                        <ChevronUp className="w-3 h-3 md:w-4 md:h-4" />
+                      </>
+                    ) : (
+                      <>
+                        Lihat semua pengumuman ({announcements.length})
+                        <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />
+                      </>
+                    )}
                   </button>
                 </div>
               )}

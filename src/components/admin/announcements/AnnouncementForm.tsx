@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, MessageSquare } from "lucide-react";
 import { memo } from "react";
 
@@ -17,7 +16,7 @@ interface AnnouncementFormProps {
   formData: AnnouncementFormData;
   isSubmitting: boolean;
   isEditing: boolean;
-  message: string;
+  message?: string; // Keep for compatibility but not used
   onFormDataChange: (data: AnnouncementFormData) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCancel?: () => void;
@@ -29,7 +28,7 @@ export const AnnouncementForm = memo(function AnnouncementForm({
   formData,
   isSubmitting,
   isEditing,
-  message,
+  message: _, // Unused but kept for compatibility
   onFormDataChange,
   onSubmit,
   onCancel,
@@ -78,11 +77,6 @@ export const AnnouncementForm = memo(function AnnouncementForm({
         </p>
       </div>
 
-      {message && (
-        <Alert>
-          <AlertDescription className="text-sm">{message}</AlertDescription>
-        </Alert>
-      )}
 
       {showCancelButton && (
         <div className="flex flex-col-reverse md:flex-row justify-end space-y-2 space-y-reverse md:space-y-0 md:space-x-2 pt-1">

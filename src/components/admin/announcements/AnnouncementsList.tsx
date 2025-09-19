@@ -2,10 +2,11 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Megaphone, MessageSquare, Plus } from "lucide-react";
+import { toast } from "sonner";
 import { AnnouncementCard } from "./AnnouncementCard";
 import { memo } from "react";
+import * as React from "react";
 
 interface AnnouncementData {
   id: string;
@@ -39,15 +40,20 @@ const LoadingState = memo(function LoadingState() {
 });
 
 const ErrorState = memo(function ErrorState({ error }: { error: string }) {
+  // Show error toast when component mounts
+  React.useEffect(() => {
+    toast.error(`Gagal memuat pengumuman: ${error}`);
+  }, [error]);
+
   return (
     <Card>
       <CardContent className="flex items-center justify-center py-8">
         <div className="text-center">
-          <Alert>
-            <AlertDescription className="text-sm">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-sm text-red-600">
               Gagal memuat pengumuman: {error}
-            </AlertDescription>
-          </Alert>
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>

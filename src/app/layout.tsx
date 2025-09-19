@@ -77,7 +77,7 @@ export default function RootLayout({
             <OfflineIndicator />
             <UpdateNotification />
             <NotificationPermissions />
-            <main className="container mx-auto px-3 md:px-4 py-4 md:py-6 pt-20 md:pt-24">
+            <main className="container mx-auto px-3 md:px-4 py-4 md:py-6 pt-12 md:pt-18">
               {children}
             </main>
             <Toaster />

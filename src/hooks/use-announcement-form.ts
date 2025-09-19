@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { toast } from "sonner";
 
 export interface AnnouncementFormData {
   title: string;
@@ -39,9 +40,12 @@ export function useAnnouncementForm({
     setMessage("");
   }, []);
 
-  const showMessage = useCallback((msg: string, duration = 3000) => {
-    setMessage(msg);
-    setTimeout(() => setMessage(""), duration);
+  const showMessage = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
+    if (type === 'success') {
+      toast.success(msg);
+    } else {
+      toast.error(msg);
+    }
   }, []);
 
   const handleSubmit = useCallback(
@@ -49,7 +53,7 @@ export function useAnnouncementForm({
       e.preventDefault();
 
       if (!formData.title.trim() || !formData.content.trim()) {
-        setMessage("Judul dan konten harus diisi");
+        toast.error("Judul dan konten harus diisi");
         return;
       }
 
@@ -77,7 +81,7 @@ export function useAnnouncementForm({
         resetForm();
         setIsDialogOpen(false);
       } catch {
-        setMessage("Terjadi kesalahan saat menyimpan pengumuman");
+        toast.error("Terjadi kesalahan saat menyimpan pengumuman");
       } finally {
         setIsSubmitting(false);
       }
@@ -100,7 +104,7 @@ export function useAnnouncementForm({
       if (success) {
         showMessage("Pengumuman berhasil dihapus");
       } else {
-        showMessage("Gagal menghapus pengumuman");
+        showMessage("Gagal menghapus pengumuman", "error");
       }
     },
     [deleteAnnouncement, showMessage]

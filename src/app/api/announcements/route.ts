@@ -156,7 +156,11 @@ export async function POST(request: NextRequest) {
     let notificationError = null;
     
     try {
-      const notificationUrl = `${process.env.NEXTAUTH_URL}/api/notifications/send`;
+      // Use localhost in development, production URL in production
+      const baseUrl = process.env.NODE_ENV === 'development' 
+        ? 'http://localhost:3000' 
+        : process.env.NEXTAUTH_URL;
+      const notificationUrl = `${baseUrl}/api/notifications/send`;
       const notificationPayload = {
         title: `📢 ${announcement.title}`,
         body: announcement.content.length > 100 
@@ -175,7 +179,7 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': request.headers.get('cookie') || ''
+          'x-internal-request': 'true'
         },
         body: JSON.stringify(notificationPayload)
       });
@@ -204,6 +208,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Include notification debug info in response
+    const baseUrl = process.env.NODE_ENV === 'development' 
+      ? 'http://localhost:3000' 
+      : process.env.NEXTAUTH_URL;
     const responseData = {
       ...transformedAnnouncement,
       debug: {
@@ -211,7 +218,7 @@ export async function POST(request: NextRequest) {
           success: !!notificationResult,
           result: notificationResult,
           error: notificationError,
-          url: `${process.env.NEXTAUTH_URL}/api/notifications/send`
+          url: `${baseUrl}/api/notifications/send`
         }
       }
     };
