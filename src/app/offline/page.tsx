@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import RefreshButton from '@/components/RefreshButton';
 
 export const metadata: Metadata = {
-  title: 'Offline - GJL App',
+  title: 'Offline - Griya Jannatin',
   description: 'Aplikasi sedang offline',
 };
 
