@@ -15,14 +15,33 @@ try {
     console.log('Push event received (fallback):', event);
     
     if (event.data) {
-      const data = event.data.json();
-      console.log('Push data:', data);
+      let data;
+      
+      try {
+        // Try to parse as JSON first
+        data = event.data.json();
+        console.log('Push data (JSON):', data);
+      } catch (jsonError) {
+        // If JSON parsing fails, treat as plain text
+        const textData = event.data.text();
+        console.log('Push data (text):', textData);
+        
+        // Create a basic notification structure for plain text
+        data = {
+          title: 'Test Notification',
+          body: textData,
+          icon: '/android-chrome-192x192.png',
+          badge: '/favicon-32x32.png',
+          url: '/',
+          timestamp: Date.now()
+        };
+      }
       
       const options = {
-        body: data.body,
+        body: data.body || 'No message content',
         icon: data.icon || '/android-chrome-192x192.png',
         badge: data.badge || '/favicon-32x32.png',
-        tag: 'announcement',
+        tag: data.tag || 'announcement',
         requireInteraction: false,
         actions: data.actions || [
           { action: 'view', title: 'Lihat' },
@@ -34,8 +53,20 @@ try {
         }
       };
       
+      const title = data.title || 'Notification';
+      
       event.waitUntil(
-        self.registration.showNotification(data.title, options)
+        self.registration.showNotification(title, options)
+      );
+    } else {
+      // Show a default notification if no data
+      event.waitUntil(
+        self.registration.showNotification('Test Notification', {
+          body: 'Push notification received without data',
+          icon: '/android-chrome-192x192.png',
+          badge: '/favicon-32x32.png',
+          tag: 'test'
+        })
       );
     }
   });
