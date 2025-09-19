@@ -201,7 +201,7 @@ export default function NotificationPermissions() {
               <BellOff className="h-4 w-4" />
             )}
             {isSubscribed && (
-              <span className="absolute -top-1 -right-1 h-2 w-2 bg-green-500 rounded-full" />
+              <span className="absolute top-1 right-1 h-2 w-2 bg-green-500 rounded-full" />
             )}
           </Button>
         </DialogTrigger>

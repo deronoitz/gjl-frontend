@@ -29,7 +29,7 @@ function AnnouncementContent({
 
   if (content.length <= adjustedMaxLength) {
     return (
-      <p className="text-xs md:text-sm lg:text-base text-muted-foreground leading-relaxed whitespace-pre-line">
+      <p className="text-xs md:text-sm lg:text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
         {content}
       </p>
     );
@@ -39,7 +39,7 @@ function AnnouncementContent({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs md:text-sm lg:text-base text-muted-foreground leading-relaxed whitespace-pre-line">
+      <p className="text-xs md:text-sm lg:text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
         {isExpanded ? content : truncatedContent}
       </p>
       <button

@@ -138,7 +138,7 @@ export const AnnouncementCard = memo(function AnnouncementCard({
 
       <CardContent className="pt-0">
         <div className="bg-gray-50 rounded-lg p-3 md:p-4 lg:p-5">
-          <p className="text-sm md:text-base lg:text-lg text-gray-700 whitespace-pre-wrap leading-relaxed">
+          <p className="text-sm md:text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
             {isExpanded ? announcement.content : truncateText(announcement.content, 150)}
           </p>
           {shouldShowExpandButton && (
