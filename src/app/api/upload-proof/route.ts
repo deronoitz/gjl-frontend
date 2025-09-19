@@ -8,8 +8,8 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Helper function to check if user can access financial records
-function canAccessFinancialRecords(user: { role: string } | null): boolean {
+// Helper function to check if user can modify financial records
+function canModifyFinancialRecords(user: { role: string } | null): boolean {
   return user !== null && user.role === 'admin';
 }
 
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     // Check authentication
     const user = await getAuthenticatedUser(request);
-    if (!canAccessFinancialRecords(user)) {
+    if (!canModifyFinancialRecords(user)) {
       return NextResponse.json(
         { error: 'Unauthorized. Admin access required.' },
         { status: 401 }
@@ -105,7 +105,7 @@ export async function DELETE(request: NextRequest) {
   try {
     // Check authentication
     const user = await getAuthenticatedUser(request);
-    if (!canAccessFinancialRecords(user)) {
+    if (!canModifyFinancialRecords(user)) {
       return NextResponse.json(
         { error: 'Unauthorized. Admin access required.' },
         { status: 401 }

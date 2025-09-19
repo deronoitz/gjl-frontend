@@ -163,7 +163,6 @@ export default function PaymentPage() {
   useEffect(() => {
     const formYear = parseInt(newPaymentForm.year);
     if (user?.id && formYear && formYear !== selectedYear && isNewPaymentDialogOpen) {
-      console.log('Fetching payment records for form year:', formYear);
       // Fetch payment records for the form year so we can check which months are paid
       if (formYearPaymentRecords.year !== formYear) {
         fetchPaymentRecordsForYear(formYear).then((records) => {
@@ -179,12 +178,6 @@ export default function PaymentPage() {
   // Fetch payment records when component mounts or year changes
   useEffect(() => {
     if (user?.id) {
-      console.log(
-        "Fetching payment records for user:",
-        user.id,
-        "year:",
-        selectedYear
-      );
 
       // Set loading state to true to show loading indicator
       // This will be handled by the individual hooks
@@ -199,7 +192,6 @@ export default function PaymentPage() {
 
       // Fetch financial records for payment history (all records for this house block - all years)
       if (user.houseNumber) {
-        console.log("Fetching financial records for house:", user.houseNumber, "- all years for history");
         fetchFinancialRecords({
           house_block: user.houseNumber,
           // Remove year filter to get all years for payment history
@@ -209,8 +201,6 @@ export default function PaymentPage() {
           console.error("Failed to fetch financial records:", error);
         });
       }
-    } else {
-      console.log("No user found, skipping payment records fetch");
     }
   }, [
     user?.id,
@@ -382,15 +372,11 @@ export default function PaymentPage() {
 
   // Generate monthly payment status for current year using payment_records table only
   const generateMonthlyPaymentStatus = (year: number = selectedYear) => {
-    console.log('Generating monthly payment status for year:', year);
     
     // Choose the correct payment records based on the year
     let recordsToUse = paymentRecords;
     if (year !== selectedYear && formYearPaymentRecords.year === year) {
       recordsToUse = formYearPaymentRecords.records;
-      console.log('Using form year payment records:', recordsToUse);
-    } else {
-      console.log('Using main payment records:', recordsToUse);
     }
     
     return MONTHS.map((month, index) => {
@@ -399,9 +385,7 @@ export default function PaymentPage() {
       // Check payment records from payment_records table - filter by both month AND year
       const monthPaymentRecords = recordsToUse.filter((record) => {
         const isMatch = record.bulan === monthNumber && record.tahun === year;
-        if (isMatch) {
-          console.log(`Found payment for ${month} ${year}:`, record);
-        }
+
         return isMatch;
       });
 
@@ -422,12 +406,6 @@ export default function PaymentPage() {
   };
 
   const monthlyStatus = generateMonthlyPaymentStatus();
-
-  console.log('Monthly status for year', selectedYear, ':', monthlyStatus.map(s => ({
-    month: s.month,
-    isPaid: s.isPaid,
-    recordsCount: s.paymentRecords.length
-  })));
 
   // Combine mock payments with backend financial records for payment history
   const getCombinedPaymentHistory = () => {

@@ -145,16 +145,14 @@ export default function FinancePage() {
 
   // Fetch records when filters change
   useEffect(() => {
-    if (isAdmin) {
-      const filters: Record<string, string> = {};
-      if (selectedMonth !== 'all') filters.month = selectedMonth;
-      if (selectedYear !== 'all') filters.year = selectedYear;
-      if (selectedType !== 'all') filters.type = selectedType;
-      
-      fetchRecords(filters);
-      setCurrentPage(1); // Reset to first page when filters change
-    }
-  }, [selectedMonth, selectedYear, selectedType, isAdmin, fetchRecords]);
+    const filters: Record<string, string> = {};
+    if (selectedMonth !== 'all') filters.month = selectedMonth;
+    if (selectedYear !== 'all') filters.year = selectedYear;
+    if (selectedType !== 'all') filters.type = selectedType;
+    
+    fetchRecords(filters);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [selectedMonth, selectedYear, selectedType, fetchRecords]);
 
   // Calculate pagination data
   const totalRecords = records.length;
@@ -384,25 +382,27 @@ export default function FinancePage() {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-2">
-          {/* Export PDF Button */}
-          <Button 
-            variant="outline" 
-            className="w-full sm:w-auto"
-            onClick={handleExportPDF}
-            disabled={isExporting || records.length === 0}
-          >
-            {isExporting ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4 mr-2" />
-            )}
-            <span className="hidden sm:inline">
-              {isExporting ? 'Mengunduh...' : 'Export PDF'}
-            </span>
-            <span className="sm:hidden">
-              {isExporting ? 'Mengunduh...' : 'PDF'}
-            </span>
-          </Button>
+          {/* Export PDF Button - Admin Only */}
+          {isAdmin && (
+            <Button 
+              variant="outline" 
+              className="w-full sm:w-auto"
+              onClick={handleExportPDF}
+              disabled={isExporting || records.length === 0}
+            >
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              <span className="hidden sm:inline">
+                {isExporting ? 'Mengunduh...' : 'Export PDF'}
+              </span>
+              <span className="sm:hidden">
+                {isExporting ? 'Mengunduh...' : 'PDF'}
+              </span>
+            </Button>
+          )}
 
           {/* Input Manual Button for Admin */}
           {isAdmin && (

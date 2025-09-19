@@ -22,6 +22,11 @@ export function isAdmin(user: AuthUser | null): boolean {
 }
 
 export function canAccessFinancialRecords(user: AuthUser | null): boolean {
-  // Only admins can access financial records
+  // All authenticated users can view financial records, only admins can modify
+  return user !== null;
+}
+
+export function canModifyFinancialRecords(user: AuthUser | null): boolean {
+  // Only admins can create/modify financial records
   return user?.role === 'admin';
 }

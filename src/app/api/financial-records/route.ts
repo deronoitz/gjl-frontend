@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseService } from '@/lib/supabase';
 import { z } from 'zod';
-import { getAuthenticatedUser, canAccessFinancialRecords } from '@/lib/auth-helpers';
+import { getAuthenticatedUser, canAccessFinancialRecords, canModifyFinancialRecords } from '@/lib/auth-helpers';
 
 // Validation schema untuk financial record
 const createFinancialRecordSchema = z.object({
@@ -42,18 +42,15 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = (page - 1) * limit;
     
-    // Users can only see their own records, admins can see all
-    const isAdmin = canAccessFinancialRecords(user);
-    
-    if (!isAdmin) {
-      // Regular users can only see records related to their house block/user
-      if (!user || (!house_block || house_block !== user.houseNumber)) {
-        return NextResponse.json(
-          { error: 'Unauthorized. You can only view your own payment records.' },
-          { status: 401 }
-        );
-      }
+    // Check if user can access financial records (all authenticated users can view)
+    if (!canAccessFinancialRecords(user)) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Please login to view financial records.' },
+        { status: 401 }
+      );
     }
+    
+    const isAdmin = user?.role === 'admin';
 
     // Get user from session/JWT (implement your auth logic here)
     // For now, we'll use service client assuming admin access
@@ -86,10 +83,9 @@ export async function GET(request: NextRequest) {
       query = query.eq('house_block', house_block);
     }
     
-    // Only show records with 'done' status for financial reports (admin users)
-    // Regular users can see all their payment records regardless of status
-    // Special case: if show_all_status is true, show all statuses even for admins (payment page)
-    if (isAdmin && !show_all_status) {
+    // Only show records with 'done' status for financial reports
+    // Special case: if show_all_status is true, show all statuses (payment page)
+    if (!show_all_status) {
       query = query.eq('status', 'done');
     }
     if (month && year) {
@@ -114,8 +110,8 @@ export async function GET(request: NextRequest) {
     if (category) countQuery.eq('category', category);
     if (house_block) countQuery.eq('house_block', house_block);
     
-    // Only count records with 'done' status for financial reports (admin users)
-    if (isAdmin && !show_all_status) {
+    // Only count records with 'done' status for financial reports
+    if (!show_all_status) {
       countQuery.eq('status', 'done');
     }
     
@@ -218,7 +214,7 @@ export async function POST(request: NextRequest) {
   try {
     // Check authentication
     const user = await getAuthenticatedUser(request);
-    if (!canAccessFinancialRecords(user)) {
+    if (!canModifyFinancialRecords(user)) {
       return NextResponse.json(
         { error: 'Unauthorized. Admin access required.' },
         { status: 401 }

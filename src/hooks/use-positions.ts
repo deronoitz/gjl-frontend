@@ -29,9 +29,7 @@ export function usePositions() {
       setLoading(true);
       setError(null);
       
-      console.log('Fetching positions from /api/positions...');
       const response = await fetch('/api/positions');
-      console.log('Response status:', response.status);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -40,7 +38,6 @@ export function usePositions() {
       }
       
       const positionData = await response.json();
-      console.log('Positions data received:', positionData);
       // Sort by order field
       const sortedPositions = positionData.sort((a: Position, b: Position) => a.order - b.order);
       setPositions(sortedPositions);
