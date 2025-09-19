@@ -9,6 +9,7 @@ import PWAInstall from '@/components/PWAInstall';
 import OfflineIndicator from '@/components/OfflineIndicator';
 import UpdateNotification from '@/components/UpdateNotification';
 import NotificationPermissions from '@/components/NotificationPermissions';
+import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import { Analytics } from '@vercel/analytics/react';
 
 const geistSans = Geist({
@@ -71,6 +72,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <CustomAuthProvider>
+            <ServiceWorkerRegistration />
             <Navigation />
             <OfflineIndicator />
             <UpdateNotification />

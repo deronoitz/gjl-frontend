@@ -89,9 +89,29 @@ export class NotificationService {
     console.log('✅ Permission granted, proceeding with subscription...');
 
     try {
-      // Wait for service worker to be ready
+      // Wait for service worker to be ready with timeout
       console.log('⏳ Waiting for service worker...');
-      const registration = await navigator.serviceWorker.ready;
+      
+      // First try to get existing registration
+      let registration = await navigator.serviceWorker.getRegistration();
+      
+      if (!registration) {
+        console.log('🔧 No existing registration, trying to register...');
+        try {
+          registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+          console.log('✅ Service worker registered manually:', !!registration);
+        } catch (regError) {
+          console.error('❌ Manual registration failed:', regError);
+        }
+      }
+      
+      // Wait for it to be ready with timeout
+      const readyPromise = navigator.serviceWorker.ready;
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Service worker ready timeout')), 10000)
+      );
+      
+      registration = await Promise.race([readyPromise, timeoutPromise]) as ServiceWorkerRegistration;
       console.log('✅ Service worker ready:', !!registration);
 
       // Subscribe to push notifications
