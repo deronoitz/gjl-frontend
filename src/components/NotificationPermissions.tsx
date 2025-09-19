@@ -50,28 +50,67 @@ export default function NotificationPermissions() {
   const handleEnableNotifications = async () => {
     setIsLoading(true);
     setError(null);
+    
+    console.log('🔔 Starting notification subscription...');
 
     try {
-      await NotificationService.subscribe();
+      // Check if notifications are supported
+      if (!NotificationService.isSupported()) {
+        throw new Error('Push notifications are not supported in this browser');
+      }
+      
+      console.log('✅ Notifications supported');
+      
+      // Check VAPID key
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      console.log('🔑 VAPID key available:', !!vapidKey);
+      if (!vapidKey) {
+        throw new Error('VAPID public key is not configured');
+      }
+      
+      // Request permission first
+      console.log('🔐 Requesting permission...');
+      const permission = await NotificationService.requestPermission();
+      console.log('🔐 Permission result:', permission);
+      
+      if (permission !== 'granted') {
+        throw new Error(`Notification permission ${permission}. Please allow notifications in your browser settings.`);
+      }
+      
+      // Subscribe to push notifications
+      console.log('📝 Subscribing to push notifications...');
+      const subscription = await NotificationService.subscribe();
+      console.log('📝 Subscription result:', !!subscription);
+      
+      // Update UI state
       setPermission('granted');
       setIsSubscribed(true);
       setShowDialog(false);
       setShowPrompt(false);
       
+      console.log('🎉 Notification setup complete!');
+      
       // Show success notification
-      await NotificationService.showNotification(
-        'Notifikasi Diaktifkan!',
-        {
-          body: 'Anda akan menerima notifikasi untuk pengumuman baru.',
-          icon: '/android-chrome-192x192.png'
-        }
-      );
+      try {
+        await NotificationService.showNotification(
+          'Notifikasi Diaktifkan!',
+          {
+            body: 'Anda akan menerima notifikasi untuk pengumuman baru.',
+            icon: '/android-chrome-192x192.png'
+          }
+        );
+      } catch (notifError) {
+        console.warn('Could not show success notification:', notifError);
+      }
+      
     } catch (err) {
+      console.error('❌ Notification subscription failed:', err);
       const errorMessage = err instanceof Error ? err.message : 'Terjadi kesalahan';
       setError(errorMessage);
       
       // Update permission status in case it changed
       const currentPermission = NotificationService.getPermissionStatus();
+      console.log('🔄 Updated permission status:', currentPermission);
       setPermission(currentPermission);
     } finally {
       setIsLoading(false);

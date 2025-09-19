@@ -68,28 +68,39 @@ export class NotificationService {
    * Subscribe to push notifications
    */
   static async subscribe(): Promise<NotificationSubscription | null> {
+    console.log('🔔 NotificationService.subscribe() called');
+    
     if (!this.isSupported()) {
       throw new Error('Push notifications are not supported');
     }
 
     if (!this.VAPID_PUBLIC_KEY) {
+      console.error('❌ VAPID_PUBLIC_KEY not found:', this.VAPID_PUBLIC_KEY);
       throw new Error('VAPID public key is not configured');
     }
+    
+    console.log('✅ VAPID key available, length:', this.VAPID_PUBLIC_KEY.length);
 
     const permission = await this.requestPermission();
     if (permission !== 'granted') {
       throw new Error('Notification permission not granted');
     }
+    
+    console.log('✅ Permission granted, proceeding with subscription...');
 
     try {
       // Wait for service worker to be ready
+      console.log('⏳ Waiting for service worker...');
       const registration = await navigator.serviceWorker.ready;
+      console.log('✅ Service worker ready:', !!registration);
 
       // Subscribe to push notifications
+      console.log('📝 Creating push subscription...');
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: this.urlBase64ToUint8Array(this.VAPID_PUBLIC_KEY) as BufferSource
       });
+      console.log('✅ Push subscription created:', !!subscription);
 
       // Convert subscription to a plain object
       const subscriptionObject = {
@@ -99,8 +110,10 @@ export class NotificationService {
           auth: arrayBufferToBase64(subscription.getKey('auth')!)
         }
       };
+      console.log('✅ Subscription object created:', !!subscriptionObject);
 
       // Send subscription to server
+      console.log('📤 Sending subscription to server...');
       const response = await fetch('/api/notifications/subscribe', {
         method: 'POST',
         headers: {
@@ -110,13 +123,20 @@ export class NotificationService {
         body: JSON.stringify({ subscription: subscriptionObject })
       });
 
+      console.log('📤 Server response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to save subscription to server');
+        const errorText = await response.text();
+        console.error('❌ Server error:', errorText);
+        throw new Error(`Failed to save subscription to server: ${response.status} ${errorText}`);
       }
+      
+      const responseData = await response.json();
+      console.log('✅ Server response:', responseData);
 
       return subscriptionObject;
     } catch (error) {
-      console.error('Error subscribing to push notifications:', error);
+      console.error('❌ Error subscribing to push notifications:', error);
       throw error;
     }
   }
