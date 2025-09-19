@@ -47,14 +47,19 @@ const nextConfig: NextConfig = {
 
 export default withPWA({
   dest: "public",
-  disable: false, // Enable PWA in development for push notifications testing
+  disable: process.env.NODE_ENV === "development" ? false : false, // Enable in both dev and prod
   register: true,
   skipWaiting: true,
   reloadOnOnline: true,
   fallbacks: {
     document: "/offline",
   },
-  buildExcludes: [/middleware-manifest\.json$/],
+  buildExcludes: [
+    /middleware-manifest\.json$/,
+    /app-build-manifest\.json$/,
+    /_buildManifest\.js$/,
+    /_ssgManifest\.js$/
+  ],
   additionalManifestEntries: [
     {
       url: '/sw-push.js',
@@ -62,6 +67,21 @@ export default withPWA({
     }
   ],
   importScripts: ['/sw-push.js'], // Import our push notification handlers
+  // Fix precaching issues
+  mode: 'production',
+  publicExcludes: ['!noprecache/**/*'],
+  // Disable precaching of problematic files
+  manifestTransforms: [
+    (manifestEntries) => {
+      const manifest = manifestEntries.filter(entry => {
+        // Exclude problematic build files
+        return !entry.url.includes('app-build-manifest.json') &&
+               !entry.url.includes('_buildManifest.js') &&
+               !entry.url.includes('_ssgManifest.js');
+      });
+      return { manifest };
+    }
+  ],
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
