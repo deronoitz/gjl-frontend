@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function OfflinePage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen flex items-center justify-center dark:bg-gray-900">
       <div className="text-center px-4">
         <div className="mx-auto w-24 h-24 mb-6 flex items-center justify-center bg-gray-200 dark:bg-gray-700 rounded-full">
           <svg 

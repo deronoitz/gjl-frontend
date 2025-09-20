@@ -18,7 +18,7 @@ export default function MonthlyFeeCard() {
   if (isLoading) {
     return (
       <Card className="overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 py-2">
           <CardTitle className="text-sm font-medium">Iuran Bulanan</CardTitle>
           <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -32,7 +32,7 @@ export default function MonthlyFeeCard() {
 
   return (
     <Card className="overflow-hidden hover:shadow-sm transition-shadow">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-emerald-50 to-green-50">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 py-2 mb-2 bg-gradient-to-r from-emerald-50 to-green-50">
         <CardTitle className="text-sm font-medium text-emerald-800">Iuran Bulanan</CardTitle>
         <DollarSign className="h-4 w-4 text-emerald-600" />
       </CardHeader>

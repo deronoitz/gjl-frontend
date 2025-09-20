@@ -442,7 +442,7 @@ export default function GalleryPage() {
           {/* Tablet-Optimized Grid */}
           <div className="grid gap-3 sm:gap-4 md:gap-5 lg:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {albums.map((album) => (
-              <Card key={album.id} className="overflow-hidden">
+              <Card key={album.id} className="overflow-hidden pt-0">
                 <div className="aspect-video relative bg-gray-100 overflow-hidden">
                   <Image
                     src={album.coverImageUrl}
@@ -457,7 +457,7 @@ export default function GalleryPage() {
                   />
                 </div>
                 
-                <CardHeader className="px-3 md:px-4 pt-0 md:pt-0 pb-0">
+                <CardHeader className="px-3 md:px-4 pt-3 md:pt-0 pb-0 border-t">
                   <div className="space-y-2">
                     <CardTitle className="text-sm md:text-base lg:text-lg leading-tight line-clamp-2">
                       {album.title}
@@ -469,7 +469,7 @@ export default function GalleryPage() {
                   </div>
                 </CardHeader>
                 
-                <CardContent className="pt-0 px-3 md:px-4 pb-3 md:pb-0">
+                <CardContent className="pt-0 px-3 md:px-4 pb-0">
                   <div className="space-y-2">
                     <Button
                       size="sm"

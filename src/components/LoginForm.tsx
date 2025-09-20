@@ -85,7 +85,7 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 -mt-20">
+    <div className="min-h-screen flex items-center justify-center -mt-20">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Image src="/gjl-logo.png" alt="GJL Logo" className="mx-auto mb-4 w-32" width={200} height={200}/>
